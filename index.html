@@ -480,12 +480,12 @@
       </div>
       ${q.bonus ? (Array.isArray(q.bonus) ? `
         <div class="bonus">
-          <span class="label">Bonustehtävät &mdash; vain Pekalle${q.bonusChoice ? ' (Pekka valitsee kumpaan vastaa)' : ''}</span>
+          <span class="label">Bonustehtävät</span>
           ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
         </div>
       ` : `
         <div class="bonus">
-          <span class="label">Bonustehtävä &mdash; vain Pekalle</span>
+          <span class="label">Bonustehtävä</span>
           <span class="text">${q.bonus}</span>
         </div>
       `) : ''}
