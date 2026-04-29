@@ -194,6 +194,41 @@
   .bonus .text {
     font-size: 1.1rem;
   }
+  .prank-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+    font-style: italic;
+    color: #6b513a;
+  }
+  .prank-spinner {
+    width: 18px;
+    height: 18px;
+    border: 3px solid #d8c8a3;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: prank-spin 0.8s linear infinite;
+    flex: 0 0 auto;
+  }
+  @keyframes prank-spin { to { transform: rotate(360deg); } }
+  .prank-error {
+    margin-top: 0.75rem;
+    background: #fdecea;
+    border: 1px solid #d9534f;
+    color: #a33;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.95rem;
+  }
+  .prank-error pre {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    color: #7a2222;
+    white-space: pre-wrap;
+  }
+
   .scoring {
     display: flex;
     flex-wrap: wrap;
@@ -382,6 +417,22 @@
       bonus: "Sano Mirjalle jotain hellää ja kaunista kuuluvalla äänellä."
     },
     {
+      q: "Päätalon kirjoissa on paljon hauskoja sanontoja ja termejä. Mitä tarkoittaa, jos on tehnyt paakostia ja elleskappia?",
+      type: "choice",
+      choices: [
+        "a) kepposia ja ilkivaltaa",
+        "b) leivoksia",
+        "c) pyhätöitä",
+        "d) flirttailua"
+      ],
+      answer: "a) kepposia ja ilkivaltaa",
+      answerText: "a) kepposia ja ilkivaltaa.",
+      bonus: {
+        prank: true,
+        intro: "Yleisön pitää arvata, mikä näistä Pekan nuoruuden pöljäilyistä pitää paikkansa..."
+      }
+    },
+    {
       q: "Mikä on Kalle Päätalon laajin ja tunnetuin romaanisarja?",
       type: "choice",
       choices: ["Koillismaa-sarja", "Iijoki-sarja", "Pohjantähti-sarja", "Tammettu-sarja"],
@@ -486,17 +537,40 @@
       choicesHtml = `<p class="open-prompt">${q.prompt}</p>`;
     }
 
-    const bonusBlock = q.bonus && scores.bonusRevealed
-      ? (Array.isArray(q.bonus)
-          ? `<div class="bonus">
+    const isPrank = q.bonus && typeof q.bonus === 'object' && !Array.isArray(q.bonus) && q.bonus.prank;
+    let bonusBlock = '';
+    if (q.bonus && scores.bonusRevealed) {
+      if (Array.isArray(q.bonus)) {
+        bonusBlock = `<div class="bonus">
               <span class="label">Bonustehtävät</span>
               ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
-            </div>`
-          : `<div class="bonus">
+            </div>`;
+      } else if (isPrank) {
+        const errored = scores.bonusPrankPhase === 'error';
+        bonusBlock = `<div class="bonus">
+              <span class="label">Bonustehtävä</span>
+              <div class="text">${q.bonus.intro}</div>
+              ${errored ? `
+                <div class="prank-error">
+                  <strong>⚠️ Client side error, not loading</strong>
+                  <pre>TypeError: Cannot read properties of undefined (reading 'options')
+    at loadBonusChoices (quiz.js:128)
+    at HTMLButtonElement.&lt;anonymous&gt; (quiz.js:97)</pre>
+                </div>
+              ` : `
+                <div class="prank-loading">
+                  <span class="prank-spinner"></span>
+                  <span>Ladataan vastausvaihtoehtoja…</span>
+                </div>
+              `}
+            </div>`;
+      } else {
+        bonusBlock = `<div class="bonus">
               <span class="label">Bonustehtävä</span>
               <span class="text">${q.bonus}</span>
-            </div>`)
-      : '';
+            </div>`;
+      }
+    }
 
     const showBonusBtn = q.bonus && state.revealed && !scores.bonusRevealed
       ? `<button id="show-bonus-btn">Näytä ${Array.isArray(q.bonus) ? 'bonustehtävät' : 'bonustehtävä'}</button>`
@@ -548,6 +622,13 @@
     const showBonus = document.getElementById("show-bonus-btn");
     if (showBonus) showBonus.addEventListener("click", () => {
       scores.bonusRevealed = true;
+      if (isPrank) {
+        scores.bonusPrankPhase = 'loading';
+        setTimeout(() => {
+          scores.bonusPrankPhase = 'error';
+          render();
+        }, 2500);
+      }
       render();
     });
 
