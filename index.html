@@ -338,20 +338,24 @@
 <script>
   const questions = [
     {
-      q: "Minä vuonna Kalle Päätalo syntyi?",
+      q: "Kallen kotikatu Tampereella?",
       type: "choice",
-      choices: ["1911", "1919", "1925", "1932"],
-      answer: "1919",
-      answerText: "1919 (11. marraskuuta).",
-      bonus: "Bonustehtävä Pekalle: Mainitse myös syntymäpäivä päivän tarkkuudella."
+      choices: ["Vasaratie", "Kirvestie", "Koulukatu", "Aarporankatu"],
+      answer: "TÄYTÄ_OIKEA_KATU",
+      answerText: "TÄYTÄ_OIKEA_KATU",
+      bonus: "Talon numero?"
     },
     {
-      q: "Missä pitäjässä Kalle Päätalo syntyi?",
+      q: "Kallen vaimon nimi kirjassa?",
       type: "open",
-      prompt: "(Ei vaihtoehtoja – yleisö arvuuttelee.)",
-      answer: "Taivalkoski",
-      answerText: "Taivalkoski Koillismaalla.",
-      bonus: null
+      prompt: "(Ei vaihtoehtoja.)",
+      answer: "TÄYTÄ_VAIMON_NIMI_KIRJASSA",
+      answerText: "TÄYTÄ_VAIMON_NIMI_KIRJASSA",
+      bonusChoice: true,
+      bonus: [
+        { points: 1, text: "Kallen vaimon nimi oikeasti?" },
+        { points: 3, text: "Mitä yhteistä Lainalla ja Mirjalla on?" }
+      ]
     },
     {
       q: "Mikä on Kalle Päätalon laajin ja tunnetuin romaanisarja?",
@@ -463,12 +467,17 @@
         <span class="label">Oikea vastaus</span>
         <span class="text">${q.answerText}</span>
       </div>
-      ${q.bonus ? `
+      ${q.bonus ? (Array.isArray(q.bonus) ? `
+        <div class="bonus">
+          <span class="label">Bonustehtävät &mdash; vain Pekalle${q.bonusChoice ? ' (Pekka valitsee kumpaan vastaa)' : ''}</span>
+          ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;"><strong>${b.points}p:</strong> ${b.text}</div>`).join('')}
+        </div>
+      ` : `
         <div class="bonus">
           <span class="label">Bonustehtävä &mdash; vain Pekalle</span>
           <span class="text">${q.bonus}</span>
         </div>
-      ` : ''}
+      `) : ''}
       <div class="scoring">
         <label>
           Pekan pisteet
