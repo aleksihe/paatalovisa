@@ -387,7 +387,7 @@
       answerText: "Laina Puronen.",
       bonusChoice: true,
       bonus: [
-        { text: "Kallen vaimon nimi oikeasti?" },
+        { text: "Kallen vaimon nimi oikeasti?", answer: "Helvi Ojala" },
         { text: "Mitä yhteistä Lainalla ja Mirjalla on?" }
       ]
     },
@@ -521,7 +521,7 @@
     revealed: false,
     pekka: 0,
     yleiso: 0,
-    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false, bonusAnswerRevealed: false }))
+    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false, bonusAnswerRevealed: false, bonusItemAnswerRevealed: [] }))
   };
 
   const card = document.getElementById("card");
@@ -562,7 +562,18 @@
       if (Array.isArray(q.bonus)) {
         bonusBlock = `<div class="bonus">
               <span class="label">Bonustehtävät</span>
-              ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
+              ${q.bonus.map((b, i) => {
+                const itemRevealed = scores.bonusItemAnswerRevealed[i];
+                return `<div style="margin-top:.6rem;">
+                  <div class="text">${b.text}</div>
+                  ${b.answer ? (itemRevealed ? `
+                    <div class="answer" style="margin-top:.4rem;">
+                      <span class="label">Oikea vastaus</span>
+                      <span class="text">${b.answer}</span>
+                    </div>
+                  ` : `<div class="actions" style="margin-top:.4rem;"><button class="show-bonus-item-answer" data-idx="${i}">Näytä vastaus</button></div>`) : ''}
+                </div>`;
+              }).join('')}
             </div>`;
       } else if (isBonusObject) {
         const showAns = scores.bonusAnswerRevealed;
@@ -654,6 +665,14 @@
     if (showBonusAnswerBtn) showBonusAnswerBtn.addEventListener("click", () => {
       scores.bonusAnswerRevealed = true;
       render();
+    });
+
+    document.querySelectorAll(".show-bonus-item-answer").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.dataset.idx);
+        scores.bonusItemAnswerRevealed[idx] = true;
+        render();
+      });
     });
 
     const showBonus = document.getElementById("show-bonus-btn");
