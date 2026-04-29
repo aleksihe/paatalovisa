@@ -378,7 +378,7 @@
       choices: ["Vasaratie", "Kirvestie", "Koulukatu", "Aarporankatu"],
       answer: "Kirvestie",
       answerText: "Kirvestie.",
-      bonus: "Talon numero?"
+      bonus: { text: "Talon numero?", answer: "22" }
     },
     {
       q: "Kallen vaimon nimi kirjassa?",
@@ -521,7 +521,7 @@
     revealed: false,
     pekka: 0,
     yleiso: 0,
-    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false }))
+    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false, bonusAnswerRevealed: false }))
   };
 
   const card = document.getElementById("card");
@@ -556,12 +556,25 @@
     }
 
     const isPrank = q.bonus && typeof q.bonus === 'object' && !Array.isArray(q.bonus) && q.bonus.prank;
+    const isBonusObject = q.bonus && typeof q.bonus === 'object' && !Array.isArray(q.bonus) && !q.bonus.prank;
     let bonusBlock = '';
     if (q.bonus && scores.bonusRevealed) {
       if (Array.isArray(q.bonus)) {
         bonusBlock = `<div class="bonus">
               <span class="label">Bonustehtävät</span>
               ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
+            </div>`;
+      } else if (isBonusObject) {
+        const showAns = scores.bonusAnswerRevealed;
+        bonusBlock = `<div class="bonus">
+              <span class="label">Bonustehtävä</span>
+              <span class="text">${q.bonus.text}</span>
+              ${q.bonus.answer ? (showAns ? `
+                <div class="answer" style="margin-top:.6rem;">
+                  <span class="label">Oikea vastaus</span>
+                  <span class="text">${q.bonus.answer}</span>
+                </div>
+              ` : `<div class="actions" style="margin-top:.6rem;"><button id="show-bonus-answer-btn">Näytä vastaus</button></div>`) : ''}
             </div>`;
       } else if (isPrank) {
         const errored = scores.bonusPrankPhase === 'error';
@@ -634,6 +647,12 @@
     const revealBtn = document.getElementById("reveal-btn");
     if (revealBtn) revealBtn.addEventListener("click", () => {
       state.revealed = true;
+      render();
+    });
+
+    const showBonusAnswerBtn = document.getElementById("show-bonus-answer-btn");
+    if (showBonusAnswerBtn) showBonusAnswerBtn.addEventListener("click", () => {
+      scores.bonusAnswerRevealed = true;
       render();
     });
 
