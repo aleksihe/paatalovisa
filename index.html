@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kalle Päätalo -visa – Pekka vastaan muu maailma</title>
+<style>
+  :root {
+    --bg: #f4ecd8;
+    --paper: #fffaf0;
+    --ink: #2b1d10;
+    --accent: #7a3b1f;
+    --accent-soft: #c98a5c;
+    --pekka: #1f5f3a;
+    --yleiso: #1f3f7a;
+    --bonus: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: var(--accent);
+    color: var(--paper);
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    letter-spacing: 0.5px;
+  }
+  .scoreboard {
+    display: flex;
+    gap: 1rem;
+  }
+  .score {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 130px;
+    text-align: center;
+    box-shadow: inset 0 0 0 2px var(--accent-soft);
+  }
+  .score .label {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .score .value {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    line-height: 1.1;
+  }
+  .score.pekka .value { color: var(--pekka); }
+  .score.yleiso .value { color: var(--yleiso); }
+
+  main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+  }
+  .card {
+    background: var(--paper);
+    width: 100%;
+    max-width: 780px;
+    border-radius: 12px;
+    padding: 2rem 2.25rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    border: 1px solid #e6d8b8;
+  }
+  .progress {
+    color: var(--accent);
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .question {
+    font-size: 1.6rem;
+    line-height: 1.35;
+    margin: 0 0 1.25rem;
+  }
+  .choices {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+  }
+  .choices li {
+    background: #fff;
+    border: 1px solid #d8c8a3;
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+  }
+  .choices li.correct {
+    background: #e6f3e0;
+    border-color: #7aa86a;
+    font-weight: bold;
+  }
+  .open-prompt {
+    font-style: italic;
+    color: #5c4326;
+    margin-bottom: 1rem;
+  }
+  .answer {
+    background: #fff8e7;
+    border-left: 5px solid var(--accent-soft);
+    padding: 1rem 1.25rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+  }
+  .answer .label {
+    font-weight: bold;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .answer .text {
+    font-size: 1.25rem;
+  }
+  .bonus {
+    background: #fff4d6;
+    border: 2px dashed var(--bonus);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+  .bonus .label {
+    font-weight: bold;
+    color: var(--bonus);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .bonus .text {
+    font-size: 1.1rem;
+  }
+  .scoring {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #e6d8b8;
+  }
+  .scoring label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .scoring input[type="number"] {
+    margin-top: 0.25rem;
+    font-family: inherit;
+    font-size: 1.4rem;
+    width: 110px;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #c9b48a;
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .scoring .pekka-input { border-color: var(--pekka); }
+  .scoring .yleiso-input { border-color: var(--yleiso); }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  button {
+    font-family: inherit;
+    font-size: 1.05rem;
+    padding: 0.7rem 1.3rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--accent);
+    color: var(--paper);
+    box-shadow: 0 2px 4px rgba(0,0,0,.15);
+    transition: transform .05s ease, background .15s ease;
+  }
+  button:hover:not(:disabled) { background: #5e2c16; }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button.secondary {
+    background: #fff;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    box-shadow: none;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .final {
+    text-align: center;
+  }
+  .final h2 {
+    font-size: 2rem;
+    margin: 0 0 0.5rem;
+    color: var(--accent);
+  }
+  .final .winner {
+    font-size: 1.8rem;
+    margin: 1rem 0;
+    font-weight: bold;
+  }
+  .final .totals {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1.5rem 0;
+  }
+  .final .totals div {
+    font-size: 1.4rem;
+  }
+  .final .totals .num {
+    display: block;
+    font-size: 3rem;
+    font-weight: bold;
+  }
+  .final .pekka .num { color: var(--pekka); }
+  .final .yleiso .num { color: var(--yleiso); }
+
+  footer {
+    text-align: center;
+    color: #6b513a;
+    padding: 1rem;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.15rem; }
+    .question { font-size: 1.3rem; }
+    .score { min-width: 100px; padding: 0.4rem 0.6rem; }
+    .score .value { font-size: 1.5rem; }
+    main { padding: 1rem 0.5rem 2rem; }
+    .card { padding: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Kalle Päätalo -visa &mdash; Pekka vastaan muu maailma</h1>
+  <div class="scoreboard">
+    <div class="score pekka">
+      <span class="label">Pekka</span>
+      <span class="value" id="pekka-total">0</span>
+    </div>
+    <div class="score yleiso">
+      <span class="label">Yleisö</span>
+      <span class="value" id="yleiso-total">0</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="card" id="card"></div>
+</main>
+
+<footer>Onnea Pekalle &amp; morsiamelle &mdash; Iijoen virta vie!</footer>
+
+<script>
+  const questions = [
+    {
+      q: "Minä vuonna Kalle Päätalo syntyi?",
+      type: "choice",
+      choices: ["1911", "1919", "1925", "1932"],
+      answer: "1919",
+      answerText: "1919 (11. marraskuuta).",
+      bonus: "Bonustehtävä Pekalle: Mainitse myös syntymäpäivä päivän tarkkuudella."
+    },
+    {
+      q: "Missä pitäjässä Kalle Päätalo syntyi?",
+      type: "open",
+      prompt: "(Ei vaihtoehtoja – yleisö arvuuttelee.)",
+      answer: "Taivalkoski",
+      answerText: "Taivalkoski Koillismaalla.",
+      bonus: null
+    },
+    {
+      q: "Mikä on Kalle Päätalon laajin ja tunnetuin romaanisarja?",
+      type: "choice",
+      choices: ["Koillismaa-sarja", "Iijoki-sarja", "Pohjantähti-sarja", "Tammettu-sarja"],
+      answer: "Iijoki-sarja",
+      answerText: "Iijoki-sarja, Päätalon omaelämäkerrallinen pääteos.",
+      bonus: null
+    },
+    {
+      q: "Kuinka monta osaa Iijoki-sarjassa on?",
+      type: "choice",
+      choices: ["12", "18", "26", "30"],
+      answer: "26",
+      answerText: "Iijoki-sarjassa on 26 osaa, kirjoitettu vuosina 1971–1998.",
+      bonus: "Bonustehtävä Pekalle: Nimeä sarjan ensimmäinen osa."
+    },
+    {
+      q: "Mikä on Iijoki-sarjan päähenkilön (Päätalon alter egon) nimi?",
+      type: "open",
+      prompt: "(Avoin kysymys – yleisö huutaa veikkauksiaan.)",
+      answer: "Kalle Vatanen",
+      answerText: "Kalle Vatanen.",
+      bonus: null
+    },
+    {
+      q: "Missä ammatissa Päätalo työskenteli ennen kirjailijanuraansa?",
+      type: "choice",
+      choices: ["Opettajana", "Savotta- ja rakennustöissä", "Pappina", "Lääkärinä"],
+      answer: "Savotta- ja rakennustöissä",
+      answerText: "Savotta-, uitto- ja rakennustöissä — kokemukset näkyvät kirjoissa.",
+      bonus: null
+    },
+    {
+      q: "Missä kaupungissa Päätalo asui valtaosan aikuiselämästään ja kirjoitti pääteoksensa?",
+      type: "choice",
+      choices: ["Oulu", "Helsinki", "Tampere", "Jyväskylä"],
+      answer: "Tampere",
+      answerText: "Tampere. Päätalon nimikkomuseo Päätalo-keskus on kuitenkin Taivalkoskella.",
+      bonus: "Bonustehtävä Pekalle: Missä kaupunginosassa Päätalo asui Tampereella?"
+    },
+    {
+      q: "Minä vuonna Kalle Päätalo kuoli?",
+      type: "choice",
+      choices: ["1995", "2000", "2004", "2010"],
+      answer: "2000",
+      answerText: "Vuonna 2000, 81-vuotiaana.",
+      bonus: null
+    },
+    {
+      q: "Mikä on Iijoki-sarjan viimeinen, sarjan päättävä osa?",
+      type: "open",
+      prompt: "(Vaikea! Yleisö saa vinkata toisilleen.)",
+      answer: "Tammettu virta",
+      answerText: "”Tammettu virta” (1998) päätti 26-osaisen sarjan.",
+      bonus: "Bonustehtävä Pekalle: Lue ääneen yksi pätkä Päätalon tyyliin (vetävä, polveileva ja murteellinen virke)."
+    },
+    {
+      q: "Päätalon teoksille on tyypillistä murre. Mitä murretta hän pääasiassa käytti?",
+      type: "choice",
+      choices: ["Savon murre", "Hämeen murre", "Koillismaan / peräpohjalainen murre", "Karjalan murre"],
+      answer: "Koillismaan / peräpohjalainen murre",
+      answerText: "Koillismaan ja peräpohjalainen murre — Taivalkosken seudun puhekieltä.",
+      bonus: "Bonustehtävä Pekalle: Käännä lause ”Minä menen nyt nukkumaan” Päätalon murteelle."
+    }
+  ];
+
+  const state = {
+    index: 0,
+    revealed: false,
+    pekka: 0,
+    yleiso: 0,
+    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0 }))
+  };
+
+  const card = document.getElementById("card");
+  const pekkaTotalEl = document.getElementById("pekka-total");
+  const yleisoTotalEl = document.getElementById("yleiso-total");
+
+  function recalcTotals() {
+    state.pekka = state.perQuestion.reduce((s, p) => s + (Number(p.pekka) || 0), 0);
+    state.yleiso = state.perQuestion.reduce((s, p) => s + (Number(p.yleiso) || 0), 0);
+    pekkaTotalEl.textContent = state.pekka;
+    yleisoTotalEl.textContent = state.yleiso;
+  }
+
+  function render() {
+    if (state.index >= questions.length) {
+      renderFinal();
+      return;
+    }
+    const q = questions[state.index];
+    const scores = state.perQuestion[state.index];
+
+    let choicesHtml = "";
+    if (q.type === "choice") {
+      choicesHtml = '<ul class="choices">' +
+        q.choices.map(c => {
+          const cls = state.revealed && c === q.answer ? ' class="correct"' : '';
+          return `<li${cls}>${c}</li>`;
+        }).join("") +
+        '</ul>';
+    } else if (q.prompt) {
+      choicesHtml = `<p class="open-prompt">${q.prompt}</p>`;
+    }
+
+    const answerHtml = state.revealed ? `
+      <div class="answer">
+        <span class="label">Oikea vastaus</span>
+        <span class="text">${q.answerText}</span>
+      </div>
+      ${q.bonus ? `
+        <div class="bonus">
+          <span class="label">Bonustehtävä &mdash; vain Pekalle</span>
+          <span class="text">${q.bonus}</span>
+        </div>
+      ` : ''}
+      <div class="scoring">
+        <label>
+          Pekan pisteet
+          <input type="number" class="pekka-input" id="pekka-input" value="${scores.pekka}" step="1" />
+        </label>
+        <label>
+          Yleisön pisteet
+          <input type="number" class="yleiso-input" id="yleiso-input" value="${scores.yleiso}" step="1" />
+        </label>
+      </div>
+    ` : '';
+
+    const actionsHtml = `
+      <div class="actions">
+        ${!state.revealed
+          ? '<button id="reveal-btn">Näytä oikea vastaus</button>'
+          : `<button id="next-btn">${state.index === questions.length - 1 ? 'Lopputulokset' : 'Seuraava kysymys'}</button>`
+        }
+        ${state.index > 0 ? '<button class="secondary" id="prev-btn">Edellinen</button>' : ''}
+      </div>
+    `;
+
+    card.innerHTML = `
+      <div class="progress">Kysymys ${state.index + 1} / ${questions.length}</div>
+      <h2 class="question">${q.q}</h2>
+      ${choicesHtml}
+      ${answerHtml}
+      ${actionsHtml}
+    `;
+
+    const revealBtn = document.getElementById("reveal-btn");
+    if (revealBtn) revealBtn.addEventListener("click", () => {
+      state.revealed = true;
+      render();
+    });
+
+    const nextBtn = document.getElementById("next-btn");
+    if (nextBtn) nextBtn.addEventListener("click", () => {
+      state.index += 1;
+      state.revealed = false;
+      render();
+    });
+
+    const prevBtn = document.getElementById("prev-btn");
+    if (prevBtn) prevBtn.addEventListener("click", () => {
+      state.index -= 1;
+      state.revealed = true;
+      render();
+    });
+
+    const pekkaInput = document.getElementById("pekka-input");
+    const yleisoInput = document.getElementById("yleiso-input");
+    if (pekkaInput) pekkaInput.addEventListener("input", e => {
+      scores.pekka = Number(e.target.value) || 0;
+      recalcTotals();
+    });
+    if (yleisoInput) yleisoInput.addEventListener("input", e => {
+      scores.yleiso = Number(e.target.value) || 0;
+      recalcTotals();
+    });
+  }
+
+  function renderFinal() {
+    let winnerText;
+    if (state.pekka > state.yleiso) {
+      winnerText = "Pekka voitti! Iijoen virta huuhtoi yleisön mennessään.";
+    } else if (state.yleiso > state.pekka) {
+      winnerText = "Yleisö voitti! Pekan on nyt tarjottava kierros.";
+    } else {
+      winnerText = "Tasapeli! Päätalo olisi kirjoittanut tästä romaanin.";
+    }
+
+    card.innerHTML = `
+      <div class="final">
+        <h2>Visa päättyi</h2>
+        <div class="totals">
+          <div class="pekka"><span class="num">${state.pekka}</span>Pekka</div>
+          <div class="yleiso"><span class="num">${state.yleiso}</span>Yleisö</div>
+        </div>
+        <div class="winner">${winnerText}</div>
+        <div class="actions" style="justify-content:center;">
+          <button class="secondary" id="back-btn">Takaisin viimeiseen kysymykseen</button>
+          <button id="restart-btn">Aloita alusta</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("back-btn").addEventListener("click", () => {
+      state.index = questions.length - 1;
+      state.revealed = true;
+      render();
+    });
+    document.getElementById("restart-btn").addEventListener("click", () => {
+      if (!confirm("Aloitetaanko alusta? Kaikki pisteet nollataan.")) return;
+      state.index = 0;
+      state.revealed = false;
+      state.perQuestion = questions.map(() => ({ pekka: 0, yleiso: 0 }));
+      recalcTotals();
+      render();
+    });
+  }
+
+  recalcTotals();
+  render();
+</script>
+</body>
+</html>
