@@ -369,6 +369,19 @@
       ]
     },
     {
+      q: "Mikä näistä ei ole Kallen isän Herkon suusta kuultu lause?",
+      type: "choice",
+      choices: [
+        "a) elä paa turhuueen (Kallelle markkoja antaessa)",
+        "b) taas on tikkua löylyissä, ei se Riitun tuuttero opi saunaa lämmittämään",
+        "c) ei tuu Martan poijjista ihtesä elättäjää",
+        "d) onko se määrässä niitä terviisiä läyrytä"
+      ],
+      answer: "c) ei tuu Martan poijjista ihtesä elättäjää",
+      answerText: "Vaihtoehto c) ei ole Herkon lause.",
+      bonus: "Sano Mirjalle jotain hellää ja kaunista kuuluvalla äänellä."
+    },
+    {
       q: "Mikä on Kalle Päätalon laajin ja tunnetuin romaanisarja?",
       type: "choice",
       choices: ["Koillismaa-sarja", "Iijoki-sarja", "Pohjantähti-sarja", "Tammettu-sarja"],
@@ -439,7 +452,7 @@
     revealed: false,
     pekka: 0,
     yleiso: 0,
-    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0 }))
+    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false }))
   };
 
   const card = document.getElementById("card");
@@ -473,22 +486,29 @@
       choicesHtml = `<p class="open-prompt">${q.prompt}</p>`;
     }
 
+    const bonusBlock = q.bonus && scores.bonusRevealed
+      ? (Array.isArray(q.bonus)
+          ? `<div class="bonus">
+              <span class="label">Bonustehtävät</span>
+              ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
+            </div>`
+          : `<div class="bonus">
+              <span class="label">Bonustehtävä</span>
+              <span class="text">${q.bonus}</span>
+            </div>`)
+      : '';
+
+    const showBonusBtn = q.bonus && state.revealed && !scores.bonusRevealed
+      ? `<button id="show-bonus-btn">Näytä ${Array.isArray(q.bonus) ? 'bonustehtävät' : 'bonustehtävä'}</button>`
+      : '';
+
     const answerHtml = state.revealed ? `
       <div class="answer">
         <span class="label">Oikea vastaus</span>
         <span class="text">${q.answerText}</span>
       </div>
-      ${q.bonus ? (Array.isArray(q.bonus) ? `
-        <div class="bonus">
-          <span class="label">Bonustehtävät</span>
-          ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
-        </div>
-      ` : `
-        <div class="bonus">
-          <span class="label">Bonustehtävä</span>
-          <span class="text">${q.bonus}</span>
-        </div>
-      `) : ''}
+      ${bonusBlock}
+      ${showBonusBtn ? `<div class="actions">${showBonusBtn}</div>` : ''}
       <div class="scoring">
         <label>
           Pekan pisteet
@@ -522,6 +542,12 @@
     const revealBtn = document.getElementById("reveal-btn");
     if (revealBtn) revealBtn.addEventListener("click", () => {
       state.revealed = true;
+      render();
+    });
+
+    const showBonus = document.getElementById("show-bonus-btn");
+    if (showBonus) showBonus.addEventListener("click", () => {
+      scores.bonusRevealed = true;
       render();
     });
 
