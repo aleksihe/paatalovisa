@@ -352,8 +352,8 @@
       answerText: "Laina Puronen.",
       bonusChoice: true,
       bonus: [
-        { points: 1, text: "Kallen vaimon nimi oikeasti? (Oikea: Helvi Ojala)" },
-        { points: 3, text: "Mitä yhteistä Lainalla ja Mirjalla on? (Avoin – tuomaristo päättää pisteet.)" }
+        { text: "Kallen vaimon nimi oikeasti?" },
+        { text: "Mitä yhteistä Lainalla ja Mirjalla on?" }
       ]
     },
     {
@@ -481,7 +481,7 @@
       ${q.bonus ? (Array.isArray(q.bonus) ? `
         <div class="bonus">
           <span class="label">Bonustehtävät &mdash; vain Pekalle${q.bonusChoice ? ' (Pekka valitsee kumpaan vastaa)' : ''}</span>
-          ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;"><strong>${b.points}p:</strong> ${b.text}</div>`).join('')}
+          ${q.bonus.map(b => `<div class="text" style="margin-top:.4rem;">${b.text}</div>`).join('')}
         </div>
       ` : `
         <div class="bonus">
