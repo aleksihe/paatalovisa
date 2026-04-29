@@ -70,40 +70,35 @@
   .score.pekka .value { color: var(--pekka); }
   .score.yleiso .value { color: var(--yleiso); }
 
-  .audio-bar {
-    background: #fff8e7;
-    border-bottom: 1px solid #e6d8b8;
-    padding: 0.6rem 1.5rem;
+  .audio-controls {
+    position: fixed;
+    bottom: 10px;
+    right: 12px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    justify-content: center;
+    gap: 6px;
+    z-index: 10;
   }
-  .audio-bar button.goal {
-    background: #1f5f3a;
-    color: #fffaf0;
-    font-size: 1.1rem;
-    padding: 0.6rem 1.4rem;
-  }
-  .audio-bar button.goal:hover:not(:disabled) { background: #16472b; }
-  .audio-bar button.stop {
-    background: #fff;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-  }
-  .audio-bar .file-label {
-    font-size: 0.9rem;
-    color: var(--accent);
-  }
-  .audio-bar input[type="file"] {
-    font-family: inherit;
-    font-size: 0.9rem;
-  }
-  .audio-bar .status {
-    font-size: 0.85rem;
+  .audio-controls button {
+    background: rgba(255, 255, 255, 0.55);
     color: #6b513a;
-    font-style: italic;
+    border: 1px solid #c9b48a;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1;
+    box-shadow: none;
+    opacity: 0.4;
+    transition: opacity .15s ease, background .15s ease;
+  }
+  .audio-controls button:hover:not(:disabled) {
+    opacity: 1;
+    background: #fff;
+  }
+  .audio-controls button:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
   }
 
   main {
@@ -353,22 +348,17 @@
   </div>
 </header>
 
-<div class="audio-bar">
-  <button class="goal" id="play-goal" disabled>🔊 Maalilaulu!</button>
-  <button class="stop" id="stop-goal" disabled>Pysäytä</button>
-  <label class="file-label">
-    Lataa äänitiedosto:
-    <input type="file" id="audio-file" accept="audio/*" />
-  </label>
-  <span class="status" id="audio-status">Ei äänitiedostoa ladattuna</span>
-  <audio id="goal-audio" preload="auto"></audio>
-</div>
-
 <main>
   <div class="card" id="card"></div>
 </main>
 
 <footer>Onnea Pekalle &amp; morsiamelle &mdash; Iijoen virta vie!</footer>
+
+<div class="audio-controls">
+  <button id="play-goal" disabled title="Soita maalilaulu">🔊</button>
+  <button id="stop-goal" disabled title="Pysäytä">⏹</button>
+  <audio id="goal-audio" preload="auto"></audio>
+</div>
 
 <script>
   const questions = [
@@ -693,41 +683,20 @@
   recalcTotals();
   render();
 
-  // Audio (Tappara goal song clip — provide your own file)
   const audio = document.getElementById("goal-audio");
   const playBtn = document.getElementById("play-goal");
   const stopBtn = document.getElementById("stop-goal");
-  const fileInput = document.getElementById("audio-file");
-  const audioStatus = document.getElementById("audio-status");
 
-  function setAudioReady(name) {
-    playBtn.disabled = false;
-    stopBtn.disabled = false;
-    audioStatus.textContent = "Ladattu: " + name;
-  }
-
-  // Try optional bundled file
   audio.src = "maalilaulu.wav";
   audio.addEventListener("canplaythrough", () => {
-    if (audioStatus.textContent.startsWith("Ei ")) setAudioReady("maalilaulu.wav");
+    playBtn.disabled = false;
+    stopBtn.disabled = false;
   }, { once: true });
-  audio.addEventListener("error", () => {
-    // Silent — user can still pick a file manually
-  });
-
-  fileInput.addEventListener("change", e => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    audio.src = url;
-    setAudioReady(file.name);
-  });
+  audio.addEventListener("error", () => {});
 
   playBtn.addEventListener("click", () => {
     audio.currentTime = 0;
-    audio.play().catch(err => {
-      audioStatus.textContent = "Toisto epäonnistui: " + err.message;
-    });
+    audio.play().catch(() => {});
   });
   stopBtn.addEventListener("click", () => {
     audio.pause();
