@@ -771,9 +771,9 @@
   }
 
   // Try optional bundled file
-  audio.src = "tappara.mp3";
+  audio.src = "maalilaulu.wav";
   audio.addEventListener("canplaythrough", () => {
-    if (audioStatus.textContent.startsWith("Ei ")) setAudioReady("tappara.mp3");
+    if (audioStatus.textContent.startsWith("Ei ")) setAudioReady("maalilaulu.wav");
   }, { once: true });
   audio.addEventListener("error", () => {
     // Silent — user can still pick a file manually
