@@ -704,8 +704,8 @@
     }
 
     const prizes = [
-      { label: "Viikon matka Teneriffalle\n2:lle henkilölle", frac: 0.30, color: "#f5a623" },
-      { label: "Kausikortti Tapparan peleihin\nkaudelle 2026-2027", frac: 0.68, color: "#1f5f3a" },
+      { label: "Viikon matka Teneriffalle 2:lle henkilölle", frac: 0.30, color: "#1f5f3a" },
+      { label: "Kausikortti Tapparan peleihin kaudelle 2026-2027", frac: 0.68, color: "#f5a623" },
       { label: "6-pack Coca Colaa", frac: 0.02, color: "#c0392b" }
     ];
 
@@ -757,19 +757,6 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      if (p.frac > 0.05) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(angle + arc / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fffaf0";
-        ctx.font = "bold 12px Georgia, serif";
-        const lines = p.label.split("\n");
-        lines.forEach((line, i) => {
-          ctx.fillText(line, radius - 12, 4 + (i - (lines.length - 1) / 2) * 14);
-        });
-        ctx.restore();
-      }
       angle += arc;
     }
     ctx.beginPath();
@@ -787,8 +774,10 @@
       if (spinning) return;
       spinning = true;
       spinBtn.disabled = true;
-      // 7 full turns + land in the middle of the Teneriffa sector (54° from top).
-      wheel.style.transform = "rotate(2826deg)";
+      // Spin counterclockwise: 7 full turns + 363°. The pointer creeps past
+      // the tiny Coca-Cola slice and stops just inside the Teneriffa sector,
+      // so the audience expects a Cola stop right until the last moment.
+      wheel.style.transform = "rotate(-2883deg)";
       setTimeout(() => {
         resultEl.textContent = "🎉 Voitto: Viikon matka Teneriffalle 2:lle henkilölle! 🌴";
       }, 30000);
