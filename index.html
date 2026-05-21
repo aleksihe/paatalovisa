@@ -332,58 +332,6 @@
     .card { padding: 1.25rem; }
   }
 
-  .wheel-wrap {
-    position: relative;
-    display: inline-block;
-    margin: 1.25rem auto 0.5rem;
-  }
-  .wheel-pointer {
-    position: absolute;
-    top: -14px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 36px;
-    line-height: 1;
-    color: #7a3b1f;
-    z-index: 2;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,.35));
-    pointer-events: none;
-  }
-  #wheel {
-    display: block;
-    transition: transform 30s cubic-bezier(0.17, 0.84, 0.34, 1);
-    border-radius: 50%;
-    box-shadow: 0 4px 14px rgba(0,0,0,.2);
-  }
-  .wheel-result {
-    margin-top: 1rem;
-    font-size: 1.4rem;
-    font-weight: bold;
-    color: var(--accent);
-    min-height: 1.6em;
-  }
-  .wheel-prizes {
-    margin: 0.75rem auto 0;
-    text-align: left;
-    max-width: 360px;
-    font-size: 0.95rem;
-    color: #5c4326;
-    list-style: none;
-    padding: 0;
-  }
-  .wheel-prizes li {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.15rem 0;
-  }
-  .wheel-prizes .swatch {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    flex: 0 0 auto;
-  }
 </style>
 </head>
 <body>
@@ -703,12 +651,6 @@
       winnerText = "Tasapeli!";
     }
 
-    const prizes = [
-      { label: "Viikon matka Teneriffalle 2:lle henkilölle", frac: 0.30, color: "#1f5f3a" },
-      { label: "Kausikortti Tapparan peleihin kaudelle 2026-2027", frac: 0.68, color: "#f5a623" },
-      { label: "6-pack Coca Colaa", frac: 0.02, color: "#c0392b" }
-    ];
-
     card.innerHTML = `
       <div class="final">
         <h2>Visa päättyi</h2>
@@ -718,70 +660,12 @@
         </div>
         <div class="winner">${winnerText}</div>
 
-        <h3 style="margin-top:1.5rem; color: var(--accent);">Palkinnon arvonta &mdash; pyöritä onnenpyörää!</h3>
-        <div class="wheel-wrap">
-          <div class="wheel-pointer">▼</div>
-          <canvas id="wheel" width="320" height="320"></canvas>
-        </div>
-        <ul class="wheel-prizes">
-          ${prizes.map(p => `<li><span class="swatch" style="background:${p.color};"></span>${p.label.replace('\n', ' ')}</li>`).join('')}
-        </ul>
-        <div class="wheel-result" id="wheel-result"></div>
-
-        <div class="actions" style="justify-content:center;">
-          <button id="spin-btn">Pyöritä onnenpyörää</button>
-        </div>
-        <div class="actions" style="justify-content:center; margin-top:.5rem;">
+        <div class="actions" style="justify-content:center; margin-top:1.5rem;">
           <button class="secondary" id="back-btn">Takaisin viimeiseen kysymykseen</button>
           <button class="secondary" id="restart-btn">Aloita alusta</button>
         </div>
       </div>
     `;
-
-    const wheel = document.getElementById("wheel");
-    const ctx = wheel.getContext("2d");
-    const cx = wheel.width / 2;
-    const cy = wheel.height / 2;
-    const radius = Math.min(cx, cy) - 6;
-
-    let angle = -Math.PI / 2;
-    for (const p of prizes) {
-      const arc = p.frac * Math.PI * 2;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, angle, angle + arc);
-      ctx.closePath();
-      ctx.fillStyle = p.color;
-      ctx.fill();
-      ctx.strokeStyle = "#fffaf0";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      angle += arc;
-    }
-    ctx.beginPath();
-    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
-    ctx.fillStyle = "#fffaf0";
-    ctx.fill();
-    ctx.strokeStyle = "#7a3b1f";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    let spinning = false;
-    const spinBtn = document.getElementById("spin-btn");
-    const resultEl = document.getElementById("wheel-result");
-    spinBtn.addEventListener("click", () => {
-      if (spinning) return;
-      spinning = true;
-      spinBtn.disabled = true;
-      // Spin counterclockwise: 7 full turns + 363°. The pointer creeps past
-      // the tiny Coca-Cola slice and stops just inside the Teneriffa sector,
-      // so the audience expects a Cola stop right until the last moment.
-      wheel.style.transform = "rotate(-2883deg)";
-      setTimeout(() => {
-        resultEl.textContent = "🎉 Voitto: Viikon matka Teneriffalle 2:lle henkilölle! 🌴";
-      }, 30000);
-    });
 
     document.getElementById("back-btn").addEventListener("click", () => {
       state.index = questions.length - 1;
