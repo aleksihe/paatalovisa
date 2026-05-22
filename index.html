@@ -575,7 +575,7 @@
     `;
 
     card.innerHTML = `
-      <div class="progress">Kysymys ${state.index + 1} / ${questions.length}</div>
+      <div class="progress">Kysymys ${state.index + 1} / ${state.index === 0 ? 26 : questions.length}</div>
       <h2 class="question">${q.q}</h2>
       ${choicesHtml}
       ${answerHtml}
