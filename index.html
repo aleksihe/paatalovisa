@@ -270,6 +270,9 @@
   let spawnGap = 0, pickupGap = 0, idaGap = 0, saunaGap = 0;
   let idaT = 0;            // aikaa jonka Iida vielä viivyttää isää
   let saunaT = 0;          // aikaa jonka isä paheksuu pussailua
+  let halkos = [];         // isän heittämät halot
+  let throwT = 0;          // aikaa seuraavaan halonheittoon
+  let autsT = 0;           // kuinka kauan "Auts!" vielä näkyy
   let gap = 0;             // Eemelin etumatka isään (px)
   let stumbleT = 0;        // törmäyksen jälkeinen suoja-aika
   let yellT = 0;           // aikaa seuraavaan karjaisuun
@@ -292,6 +295,9 @@
     saunas = [];
     saunaGap = speed * 13;
     saunaT = 0;
+    halkos = [];
+    throwT = 5;
+    autsT = 0;
     gap = W * 0.46;
     stumbleT = 0;
     yellT = 4 + Math.random() * 4;
@@ -364,6 +370,24 @@
   function spawnIda() {
     idas.push({ x: W + 30 * unit, ph: Math.random() * Math.PI * 2 });
     idaGap = speed * (9 + Math.random() * 8);
+  }
+
+  function throwHalko() {
+    // Halko lähtee isän kädestä ja tähtää Eemeliin pienellä hajonnalla,
+    // joten osa heitoista menee reilusti ohi.
+    const x0 = player.x - gap;
+    const y0 = groundY - 46 * unit;
+    const t = 0.8 + Math.random() * 0.3;
+    const aimX = player.x + player.w * 0.5 + (Math.random() - 0.5) * 110 * unit;
+    const aimY = groundY - 18 * unit;
+    const g = 1500 * unit;
+    halkos.push({
+      x: x0, y: y0,
+      vx: (aimX - x0) / t,
+      vy: (aimY - y0 - 0.5 * g * t * t) / t,
+      rot: 0, vrot: 6 + Math.random() * 5,
+      hit: false, landed: false
+    });
   }
 
   function spawnSauna() {
@@ -469,6 +493,38 @@
       c.x -= speed * 0.1 * dt * c.s;
       if (c.x < -80) { c.x = W + 80; c.y = (0.08 + Math.random() * 0.22) * H; }
     }
+
+    // Isä paiskoo halkoja. Osuma ei hidasta, Eemeli vain älähtää.
+    throwT -= dt;
+    if (throwT <= 0 && idaT <= 0 && saunaT <= 0) {
+      throwHalko();
+      throwT = 4.5 + Math.random() * 4;
+    }
+    if (autsT > 0) autsT -= dt;
+    const grav = 1500 * unit;
+    for (const hk of halkos) {
+      if (hk.landed) {
+        hk.x -= speed * dt;
+        continue;
+      }
+      hk.vy += grav * dt;
+      hk.x += hk.vx * dt;
+      hk.y += hk.vy * dt;
+      hk.rot += hk.vrot * dt;
+      if (!hk.hit &&
+          hk.x > player.x && hk.x < player.x + player.w &&
+          hk.y > player.y && hk.y < player.y + player.h) {
+        hk.hit = true;
+        autsT = 1.1;
+        hk.vx = -Math.abs(hk.vx) * 0.35;
+        hk.vy = -260 * unit;
+      }
+      if (hk.y >= groundY - 4 * unit) {
+        hk.y = groundY - 4 * unit;
+        hk.landed = true;
+      }
+    }
+    halkos = halkos.filter((hk) => hk.x > -30 * unit && hk.x < W + 60 * unit);
 
     // Törmäys esteeseen: Eemeli kompastuu ja isä pääsee lähemmäs
     if (stumbleT <= 0) {
@@ -599,6 +655,22 @@
     ctx.lineTo(s * 0.72, s * 0.62);
     ctx.lineTo(s * 0.18, s * 0.14);
     ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHalko(hk) {
+    ctx.save();
+    ctx.translate(hk.x, hk.y);
+    ctx.rotate(hk.rot);
+    const l = 16 * unit, r = 3.5 * unit;
+    ctx.fillStyle = C.woodDark;
+    ctx.beginPath();
+    ctx.roundRect(-l / 2, -r, l, r * 2, r);
+    ctx.fill();
+    ctx.fillStyle = "#c9a06a";
+    ctx.beginPath();
+    ctx.ellipse(-l / 2 + r * 0.8, 0, r * 0.7, r * 0.85, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -1027,8 +1099,33 @@
       drawGun(p.x, p.y + Math.sin(p.bob) * 5 * unit, p.r, -0.3 + Math.sin(p.bob * 0.5) * 0.1);
     }
     for (const s of idas) drawIda(s.x, s.ph, false);
+    for (const hk of halkos) drawHalko(hk);
     drawDad();
     drawEemeli();
+
+    // Eemelin älähdys halko-osumasta
+    if (autsT > 0 && state === "run") {
+      const bx = player.x + player.w + 4 * unit;
+      const by = player.y - 12 * unit;
+      ctx.fillStyle = C.paper;
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(bx - 6 * unit, by - 14 * unit, 42 * unit, 20 * unit, 7 * unit);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 6 * unit);
+      ctx.lineTo(bx - 5 * unit, by + 15 * unit);
+      ctx.lineTo(bx + 9 * unit, by + 6 * unit);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = C.red;
+      ctx.font = `bold ${12 * unit}px Georgia, serif`;
+      ctx.textAlign = "left";
+      ctx.fillText("Auts!", bx, by);
+    }
     drawHud();
 
     if (state === "start") {
