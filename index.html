@@ -253,7 +253,7 @@
       if (!("speechSynthesis" in window)) return;
       if (!fiVoice) pickFiVoice();
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance("Eeeemeeeliii!");
+      const u = new SpeechSynthesisUtterance("Aaamiliii!");
       u.lang = "fi-FI";
       if (fiVoice) u.voice = fiVoice;
       u.rate = 0.7;
@@ -1039,7 +1039,7 @@
       ctx.fillStyle = C.paper;
       ctx.strokeStyle = C.ink;
       ctx.lineWidth = 1.5;
-      const tw = 110 * unit;
+      const tw = 92 * unit;
       ctx.beginPath();
       ctx.roundRect(bx - 8 * unit, by - 18 * unit, tw, 26 * unit, 8 * unit);
       ctx.fill();
@@ -1054,7 +1054,7 @@
       ctx.fillStyle = C.red;
       ctx.font = `bold ${13 * unit}px Georgia, serif`;
       ctx.textAlign = "left";
-      ctx.fillText("EEEEMEEELIII!!!", bx, by);
+      ctx.fillText("AAAMILIII!!!", bx, by);
     }
   }
 
