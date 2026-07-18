@@ -129,7 +129,96 @@
     e.stopPropagation();
     muted = !muted;
     muteBtn.textContent = muted ? "🔇" : "🔊";
+    if (muted) {
+      stopMusic();
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (err) {}
+    } else if (state === "run") {
+      startMusic();
+    }
   });
+  // 8-bittinen taustamusiikki Web Audio API:lla (ei ulkoisia tiedostoja).
+  // Kanttiaaltomelodia + kolmioaaltobasso + kohinahihat, 32 kahdeksasosan luuppi.
+  const music = {
+    ctx: null, master: null, noiseBuf: null,
+    timer: null, step: 0, nextTime: 0,
+    bpm: 148,
+    // MIDI-numerot, 0 = tauko. Am–F–C–G, reipas kansansävelmähenkinen kulku.
+    lead: [
+      76, 0, 79, 81, 79, 76, 74, 76,
+      74, 76, 74, 72, 69, 0, 72, 74,
+      76, 0, 79, 81, 83, 81, 79, 76,
+      72, 74, 71, 74, 72, 0, 69, 0
+    ],
+    bass: [
+      45, 0, 52, 0, 45, 0, 52, 0,
+      41, 0, 48, 0, 41, 0, 48, 0,
+      48, 0, 55, 0, 48, 0, 55, 0,
+      43, 0, 50, 0, 43, 0, 50, 0
+    ]
+  };
+  function midiHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function initAudio() {
+    if (music.ctx) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      music.ctx = new AC();
+      music.master = music.ctx.createGain();
+      music.master.gain.value = 0.16;
+      music.master.connect(music.ctx.destination);
+      const len = Math.floor(music.ctx.sampleRate * 0.1);
+      music.noiseBuf = music.ctx.createBuffer(1, len, music.ctx.sampleRate);
+      const d = music.noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) {}
+  }
+  function blip(type, freq, t, dur, vol) {
+    const ctx = music.ctx;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(music.master);
+    o.start(t); o.stop(t + dur);
+  }
+  function hat(t) {
+    const ctx = music.ctx;
+    const s = ctx.createBufferSource();
+    s.buffer = music.noiseBuf;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    s.connect(g); g.connect(music.master);
+    s.start(t); s.stop(t + 0.05);
+  }
+  function scheduleMusic() {
+    const ctx = music.ctx;
+    const stepDur = 60 / music.bpm / 2; // kahdeksasosa
+    while (music.nextTime < ctx.currentTime + 0.15) {
+      const i = music.step;
+      if (music.lead[i]) blip("square", midiHz(music.lead[i]), music.nextTime, stepDur * 0.9, 0.28);
+      if (music.bass[i]) blip("triangle", midiHz(music.bass[i]), music.nextTime, stepDur * 1.8, 0.5);
+      if (i % 2 === 1) hat(music.nextTime);
+      music.step = (i + 1) % music.lead.length;
+      music.nextTime += stepDur;
+    }
+  }
+  function startMusic() {
+    if (muted) return;
+    initAudio();
+    if (!music.ctx) return;
+    try { if (music.ctx.state === "suspended") music.ctx.resume(); } catch (e) {}
+    if (music.timer) return;
+    music.step = 0;
+    music.nextTime = music.ctx.currentTime + 0.05;
+    music.timer = setInterval(scheduleMusic, 60);
+  }
+  function stopMusic() {
+    if (music.timer) { clearInterval(music.timer); music.timer = null; }
+  }
+
   function yellSound() {
     if (muted) return;
     try {
@@ -198,6 +287,7 @@
     } else {
       state = "run";
       reset();
+      startMusic();
     }
   }
   canvas.addEventListener("touchstart", pressed, { passive: false });
@@ -236,6 +326,7 @@
 
   function endGame() {
     state = "over";
+    stopMusic();
     ukot += 1;
     if (guns > highScore) highScore = guns;
     try {
@@ -263,8 +354,8 @@
     if (stumbleT > 0) stumbleT -= dt;
 
     // Isä kirii tasaisesti ja karjaisun aikana rynnistää
-    let closing = 7 * unit;
-    if (yellShow > 0) closing += 24 * unit;
+    let closing = 4.5 * unit;
+    if (yellShow > 0) closing += 16 * unit;
     gap -= closing * dt;
 
     // Karjaisu
@@ -304,7 +395,7 @@
         const oy = groundY - o.h;
         if (px < o.x + o.w * 0.85 && px + pw > o.x + o.w * 0.15 && py + ph > oy + o.h * 0.15) {
           stumbleT = 1.2;
-          gap -= W * 0.11;
+          gap -= W * 0.09;
           speed = Math.max(speed * 0.8, 200 * unit);
           break;
         }
