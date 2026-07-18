@@ -2,707 +2,664 @@
 <html lang="fi">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Kalle Päätalo -visa – Pekka vastaan muu maailma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Eemeli karkuteillä</title>
 <style>
   :root {
-    --bg: #f4ecd8;
+    --sky: #bfdcec;
     --paper: #fffaf0;
-    --ink: #2b1d10;
-    --accent: #7a3b1f;
-    --accent-soft: #c98a5c;
-    --pekka: #1f5f3a;
-    --yleiso: #1f3f7a;
-    --bonus: #8a5a00;
+    --ink: #2b2417;
+    --red: #a63a2a;
+    --blue: #3a5f8a;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--sky);
     font-family: Georgia, "Times New Roman", serif;
-    background: var(--bg);
     color: var(--ink);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
   }
   header {
-    background: var(--accent);
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--red);
     color: var(--paper);
-    padding: 1rem 1.5rem;
+    padding: 0.45rem 1rem;
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
     box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    z-index: 5;
   }
   header h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     letter-spacing: 0.5px;
+    white-space: nowrap;
   }
-  .scoreboard {
-    display: flex;
-    gap: 1rem;
-  }
-  .score {
+  #mute {
     background: var(--paper);
     color: var(--ink);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    min-width: 130px;
-    text-align: center;
-    box-shadow: inset 0 0 0 2px var(--accent-soft);
-  }
-  .score .label {
-    display: block;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--accent);
-  }
-  .score .value {
-    display: block;
-    font-size: 2rem;
-    font-weight: bold;
-    line-height: 1.1;
-  }
-  .score.pekka .value { color: var(--pekka); }
-  .score.yleiso .value { color: var(--yleiso); }
-
-  .audio-controls {
-    position: fixed;
-    bottom: 10px;
-    right: 12px;
-    display: flex;
-    gap: 6px;
-    z-index: 10;
-  }
-  .audio-controls button {
-    background: rgba(255, 255, 255, 0.55);
-    color: #6b513a;
-    border: 1px solid #c9b48a;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    font-size: 14px;
-    line-height: 1;
-    box-shadow: none;
-    opacity: 0.4;
-    transition: opacity .15s ease, background .15s ease;
-  }
-  .audio-controls button:hover:not(:disabled) {
-    opacity: 1;
-    background: #fff;
-  }
-  .audio-controls button:disabled {
-    opacity: 0.2;
-    cursor: not-allowed;
-  }
-
-  main {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    padding: 2rem 1rem 3rem;
-  }
-  .card {
-    background: var(--paper);
-    width: 100%;
-    max-width: 780px;
-    border-radius: 12px;
-    padding: 2rem 2.25rem;
-    box-shadow: 0 6px 18px rgba(0,0,0,.12);
-    border: 1px solid #e6d8b8;
-  }
-  .progress {
-    color: var(--accent);
-    font-size: 0.95rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-  }
-  .question {
-    font-size: 1.6rem;
-    line-height: 1.35;
-    margin: 0 0 1.25rem;
-  }
-  .choices {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1rem;
-  }
-  .choices li {
-    background: #fff;
-    border: 1px solid #d8c8a3;
-    border-radius: 8px;
-    padding: 0.65rem 1rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-  }
-  .choices li.correct {
-    background: #e6f3e0;
-    border-color: #7aa86a;
-    font-weight: bold;
-  }
-  .open-prompt {
-    font-style: italic;
-    color: #5c4326;
-    margin-bottom: 1rem;
-  }
-  .answer {
-    background: #fff8e7;
-    border-left: 5px solid var(--accent-soft);
-    padding: 1rem 1.25rem;
-    border-radius: 6px;
-    margin: 1rem 0;
-  }
-  .answer .label {
-    font-weight: bold;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.85rem;
-    display: block;
-    margin-bottom: 0.25rem;
-  }
-  .answer .text {
-    font-size: 1.25rem;
-  }
-  .bonus {
-    background: #fff4d6;
-    border: 2px dashed var(--bonus);
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    margin: 1rem 0;
-  }
-  .bonus .label {
-    font-weight: bold;
-    color: var(--bonus);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
-    display: block;
-    margin-bottom: 0.25rem;
-  }
-  .bonus .text {
-    font-size: 1.1rem;
-  }
-  .prank-loading {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    margin-top: 0.6rem;
-    font-style: italic;
-    color: #6b513a;
-  }
-  .prank-spinner {
-    width: 18px;
-    height: 18px;
-    border: 3px solid #d8c8a3;
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: prank-spin 0.8s linear infinite;
-    flex: 0 0 auto;
-  }
-  @keyframes prank-spin { to { transform: rotate(360deg); } }
-  .prank-error {
-    margin-top: 0.75rem;
-    background: #fdecea;
-    border: 1px solid #d9534f;
-    color: #a33;
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 0.95rem;
-  }
-  .prank-error pre {
-    margin: 0.4rem 0 0;
-    font-size: 0.78rem;
-    color: #7a2222;
-    white-space: pre-wrap;
-  }
-
-  .scoring {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: flex-end;
-    margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid #e6d8b8;
-  }
-  .scoring label {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.9rem;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .scoring input[type="number"] {
-    margin-top: 0.25rem;
-    font-family: inherit;
-    font-size: 1.4rem;
-    width: 110px;
-    padding: 0.4rem 0.6rem;
-    border: 1px solid #c9b48a;
-    border-radius: 6px;
-    background: #fff;
-    color: var(--ink);
-  }
-  .scoring .pekka-input { border-color: var(--pekka); }
-  .scoring .yleiso-input { border-color: var(--yleiso); }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-  button {
-    font-family: inherit;
-    font-size: 1.05rem;
-    padding: 0.7rem 1.3rem;
     border: none;
     border-radius: 8px;
+    font-size: 1rem;
+    padding: 0.2rem 0.55rem;
     cursor: pointer;
-    background: var(--accent);
-    color: var(--paper);
-    box-shadow: 0 2px 4px rgba(0,0,0,.15);
-    transition: transform .05s ease, background .15s ease;
   }
-  button:hover:not(:disabled) { background: #5e2c16; }
-  button:active:not(:disabled) { transform: translateY(1px); }
-  button.secondary {
-    background: #fff;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    box-shadow: none;
-  }
-  button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .final {
-    text-align: center;
-  }
-  .final h2 {
-    font-size: 2rem;
-    margin: 0 0 0.5rem;
-    color: var(--accent);
-  }
-  .final .winner {
-    font-size: 1.8rem;
-    margin: 1rem 0;
-    font-weight: bold;
-  }
-  .final .totals {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin: 1.5rem 0;
-  }
-  .final .totals div {
-    font-size: 1.4rem;
-  }
-  .final .totals .num {
+  #game {
     display: block;
-    font-size: 3rem;
-    font-weight: bold;
+    width: 100%;
+    height: 100%;
   }
-  .final .pekka .num { color: var(--pekka); }
-  .final .yleiso .num { color: var(--yleiso); }
-
-  footer {
-    text-align: center;
-    color: #6b513a;
-    padding: 1rem;
-    font-size: 0.85rem;
-  }
-
-  @media (max-width: 600px) {
-    header h1 { font-size: 1.15rem; }
-    .question { font-size: 1.3rem; }
-    .score { min-width: 100px; padding: 0.4rem 0.6rem; }
-    .score .value { font-size: 1.5rem; }
-    main { padding: 1rem 0.5rem 2rem; }
-    .card { padding: 1.25rem; }
-  }
-
 </style>
 </head>
 <body>
 <header>
-  <h1>Kalle Päätalo -visa &mdash; Pekka vastaan muu maailma</h1>
-  <div class="scoreboard">
-    <div class="score pekka">
-      <span class="label">Pekka</span>
-      <span class="value" id="pekka-total">0</span>
-    </div>
-    <div class="score yleiso">
-      <span class="label">Yleisö</span>
-      <span class="value" id="yleiso-total">0</span>
-    </div>
-  </div>
+  <h1>Eemeli karkuteillä</h1>
+  <button id="mute" title="Äänet päälle/pois">🔊</button>
 </header>
-
-<main>
-  <div class="card" id="card"></div>
-</main>
-
-<footer><a href="peli.html" style="color:#6b513a;">🪓 Pelaa välillä Tukkilaisjuoksua</a></footer>
-
-<div class="audio-controls">
-  <button id="play-goal" disabled title="Soita maalilaulu">🔊</button>
-  <button id="stop-goal" disabled title="Pysäytä">⏹</button>
-  <audio id="goal-audio" preload="auto"></audio>
-</div>
-
+<canvas id="game"></canvas>
 <script>
-  const questions = [
-    {
-      q: "Kuinka monta kirjaa Kalle Päätalon omaelämäkerrassa (Iijoki-sarja) on?",
-      type: "open",
-      answer: "26",
-      answerText: "26 kirjaa.",
-      bonus: "Luettele kirjojen nimiä. (1p jokaista viittä oikein mennyttä kohden.)"
-    },
-    {
-      q: "Minä vuonna Kalle Päätalo syntyi?",
-      type: "choice",
-      choices: ["a) 1909", "b) 1914", "c) 1919", "d) 1924"],
-      answer: "c) 1919",
-      answerText: "c) 1919.",
-      bonus: "Mikä on Mirjan syntymäpäivä? (1p)"
-    },
-    {
-      q: "Millä tiellä/kadulla Kallen ensimmäinen itse rakentama koti sijaitsi Tampereella?",
-      type: "choice",
-      choices: ["Vasaratie", "Kirvestie", "Koulukatu", "Aarporankatu"],
-      answer: "Kirvestie",
-      answerText: "Kirvestie.",
-      bonus: { text: "Talon numero? (1p)", answer: "22" }
-    },
-    {
-      q: "Kallen ensimmäisen vaimon nimi kirjassa?",
-      type: "open",
-      answer: "Laina Puronen",
-      answerText: "Laina Puronen.",
-      bonusChoice: true,
-      bonus: [
-        { text: "Kallen vaimon nimi oikeasti? (1p)", answer: "Helvi Ojala" },
-        { text: "Mitä yhteistä Lainalla ja Mirjalla on? (1p / ominaisuus)" }
-      ]
-    },
-    {
-      q: "Kallen hyvä ystävä Janne Mäkinen rakensi Kallen avustuksella talon. Montako uunia talossa oli?",
-      type: "choice",
-      choices: ["2", "4", "6", "10"],
-      answer: "10",
-      answerText: "10 uunia. Kallen isä Herkko aina muisteli Jannen kymmenuunista taloa.",
-      bonus: { text: "Janne vaihtoi sukunimensä, koska \"Janne Mäkinen\" on niin yleinen nimi. Mikä oli uusi sukunimi? (1p)", answer: "Mäkitörmä" }
-    },
-    {
-      q: "Mikä näistä ei ole Kallen isän Herkon suusta kuultu lause?",
-      type: "choice",
-      choices: [
-        "a) elä paa turhuueen (Kallelle markkoja antaessa)",
-        "b) taas on tikkua löylyissä, ei se Riitun tuuttero opi saunaa lämmittämään (vaimon lämmittämässä saunassa)",
-        "c) ei tuu Martan poijjista ihtesä elättäjää, ojankaivajiksi päätyvät (lapsenlapsien touhuja seuratessa)",
-        "d) onko se määrässä niitä terviisiä läyrytä (taloon saapuville vieraille)"
-      ],
-      answer: "c) ei tuu Martan poijjista ihtesä elättäjää, ojankaivajiksi päätyvät (lapsenlapsien touhuja seuratessa)",
-      answerText: "Vaihtoehto c) ei ole Herkon lause.",
-      bonus: "Sano Mirjalle jotain hellää ja kaunista kuuluvalla äänellä. 3p"
-    },
-    {
-      q: "Päätalon kirjoissa on paljon hauskoja sanontoja ja termejä. Mitä tarkoittaa, jos on tehnyt paakostia ja elleskappia?",
-      type: "choice",
-      choices: [
-        "a) kepposia ja tuhmuuksia",
-        "b) leivoksia",
-        "c) pyhätöitä",
-        "d) flirttailua"
-      ],
-      answer: "a) kepposia ja tuhmuuksia",
-      answerText: "a) kepposia ja tuhmuuksia.",
-      bonus: {
-        prank: true,
-        intro: "Mikä listan vaihtoehdoista ei pidä paikkaansa"
-      }
-    },
-    {
-      q: "Mikä oli Kallen ensimmäisen auton merkki ja malli?",
-      type: "open",
-      answer: "Ford Deluxe",
-      answerText: "Ford Deluxe.",
-      bonus: { text: "Montako markkaa auto maksoi 5 tmk tarkkuudella? (1p)", answer: "155 000 markkaa (n. 2,3 kertaa Kallen kuukausipalkka)" }
-    }
-  ];
+(() => {
+  "use strict";
 
-  const state = {
-    index: 0,
-    revealed: false,
-    pekka: 0,
-    yleiso: 0,
-    perQuestion: questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false, bonusAnswerRevealed: false, bonusItemAnswerRevealed: [] }))
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const C = {
+    sky: "#bfdcec",
+    hill: "#a8c69a",
+    field: "#7fae62",
+    fieldDark: "#6a9752",
+    path: "#c9a87a",
+    house: "#a63a2a",      // Kissankulman punamulta
+    houseTrim: "#fffaf0",
+    fence: "#9a7b52",
+    churn: "#8f9aa5",
+    pig: "#eeb8b0",
+    pigDark: "#d99a90",
+    hair: "#e8d27a",       // pellavatukka
+    cap: "#2e4a75",        // sininen myssy
+    shirt: "#5a82b5",      // sininen takki
+    pants: "#3a5f8a",      // siniset housut
+    skin: "#f0c9a2",
+    dad: "#5a4632",
+    dadShirt: "#8a7355",
+    dadFace: "#d98a6a",    // punakka naama
+    wood: "#b58a55",
+    woodDark: "#8a6535",
+    ink: "#2b2417",
+    paper: "#fffaf0",
+    red: "#a63a2a"
   };
 
-  const card = document.getElementById("card");
-  const pekkaTotalEl = document.getElementById("pekka-total");
-  const yleisoTotalEl = document.getElementById("yleiso-total");
+  let W = 0, H = 0, dpr = 1, groundY = 0, unit = 0;
 
-  function recalcTotals() {
-    state.pekka = state.perQuestion.reduce((s, p) => s + (Number(p.pekka) || 0), 0);
-    state.yleiso = state.perQuestion.reduce((s, p) => s + (Number(p.yleiso) || 0), 0);
-    pekkaTotalEl.textContent = state.pekka;
-    yleisoTotalEl.textContent = state.yleiso;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    groundY = H * 0.78;
+    unit = H / 480;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const HS_KEY = "eemeli-ennatys";
+  const UKKO_KEY = "eemeli-puu-ukot";
+  let highScore = 0, ukot = 0;
+  try {
+    highScore = Number(localStorage.getItem(HS_KEY)) || 0;
+    ukot = Number(localStorage.getItem(UKKO_KEY)) || 0;
+  } catch (e) {}
+
+  // Äänet: isän karjaisu puhesynteesillä, jos laite tukee.
+  let muted = false;
+  const muteBtn = document.getElementById("mute");
+  muteBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+  });
+  function yellSound() {
+    if (muted) return;
+    try {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance("Eeeemeeeliii!");
+      u.lang = "fi-FI";
+      u.rate = 0.7;
+      u.pitch = 0.5;
+      u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
   }
 
-  function render() {
-    if (state.index >= questions.length) {
-      renderFinal();
-      return;
+  // Pelitila: "start" | "run" | "over"
+  let state = "start";
+  let speed = 0, distance = 0, meters = 0, guns = 0;
+  let obstacles = [], pickups = [], clouds = [];
+  let spawnGap = 0, pickupGap = 0;
+  let gap = 0;             // Eemelin etumatka isään (px)
+  let stumbleT = 0;        // törmäyksen jälkeinen suoja-aika
+  let yellT = 0;           // aikaa seuraavaan karjaisuun
+  let yellShow = 0;        // kuinka kauan puhekupla vielä näkyy
+  let caughtByYell = false;
+  let lastTime = 0;
+
+  const player = { x: 0, y: 0, vy: 0, w: 0, h: 0, onGround: true, legPhase: 0 };
+
+  function maxGap() { return W * 0.5; }
+
+  function reset() {
+    distance = 0; meters = 0; guns = 0;
+    speed = Math.min(250 * unit, W * 0.75);
+    obstacles = []; pickups = [];
+    spawnGap = speed * 1.6;
+    pickupGap = speed * 2.5;
+    gap = W * 0.46;
+    stumbleT = 0;
+    yellT = 4 + Math.random() * 4;
+    yellShow = 0;
+    player.w = 24 * unit;
+    player.h = 40 * unit;
+    player.x = W * 0.42;
+    player.y = groundY - player.h;
+    player.vy = 0;
+    player.onGround = true;
+    player.legPhase = 0;
+    clouds = [];
+    for (let i = 0; i < 4; i++) {
+      clouds.push({ x: Math.random() * W, y: (0.08 + Math.random() * 0.22) * H, s: (0.5 + Math.random()) * unit });
     }
-    const q = questions[state.index];
-    const scores = state.perQuestion[state.index];
+  }
+  reset();
 
-    let choicesHtml = "";
-    if (q.type === "choice") {
-      choicesHtml = '<ul class="choices">' +
-        q.choices.map(c => {
-          const cls = state.revealed && c === q.answer ? ' class="correct"' : '';
-          return `<li${cls}>${c}</li>`;
-        }).join("") +
-        '</ul>';
-    } else if (q.prompt) {
-      choicesHtml = `<p class="open-prompt">${q.prompt}</p>`;
+  function jump() {
+    if (player.onGround) {
+      player.vy = -600 * unit;
+      player.onGround = false;
     }
-
-    const isPrank = q.bonus && typeof q.bonus === 'object' && !Array.isArray(q.bonus) && q.bonus.prank;
-    const isBonusObject = q.bonus && typeof q.bonus === 'object' && !Array.isArray(q.bonus) && !q.bonus.prank;
-    let bonusBlock = '';
-    if (q.bonus && scores.bonusRevealed) {
-      if (Array.isArray(q.bonus)) {
-        bonusBlock = `<div class="bonus">
-              <span class="label">Bonustehtävät</span>
-              ${q.bonus.map((b, i) => {
-                const itemRevealed = scores.bonusItemAnswerRevealed[i];
-                return `<div style="margin-top:.6rem;">
-                  <div class="text">${b.text}</div>
-                  ${b.answer ? (itemRevealed ? `
-                    <div class="answer" style="margin-top:.4rem;">
-                      <span class="label">Oikea vastaus</span>
-                      <span class="text">${b.answer}</span>
-                    </div>
-                  ` : `<div class="actions" style="margin-top:.4rem;"><button class="show-bonus-item-answer" data-idx="${i}">Näytä vastaus</button></div>`) : ''}
-                </div>`;
-              }).join('')}
-            </div>`;
-      } else if (isBonusObject) {
-        const showAns = scores.bonusAnswerRevealed;
-        bonusBlock = `<div class="bonus">
-              <span class="label">Bonustehtävä</span>
-              <span class="text">${q.bonus.text}</span>
-              ${q.bonus.answer ? (showAns ? `
-                <div class="answer" style="margin-top:.6rem;">
-                  <span class="label">Oikea vastaus</span>
-                  <span class="text">${q.bonus.answer}</span>
-                </div>
-              ` : `<div class="actions" style="margin-top:.6rem;"><button id="show-bonus-answer-btn">Näytä vastaus</button></div>`) : ''}
-            </div>`;
-      } else if (isPrank) {
-        const errored = scores.bonusPrankPhase === 'error';
-        bonusBlock = `<div class="bonus">
-              <span class="label">Bonustehtävä</span>
-              <div class="text">${q.bonus.intro}</div>
-              ${errored ? `
-                <div class="prank-error">
-                  <strong>⚠️ Client side error, not loading</strong>
-                  <pre>TypeError: Cannot read properties of undefined (reading 'options')
-    at loadBonusChoices (quiz.js:128)
-    at HTMLButtonElement.&lt;anonymous&gt; (quiz.js:97)</pre>
-                </div>
-              ` : `
-                <div class="prank-loading">
-                  <span class="prank-spinner"></span>
-                </div>
-              `}
-            </div>`;
-      } else {
-        bonusBlock = `<div class="bonus">
-              <span class="label">Bonustehtävä</span>
-              <span class="text">${q.bonus}</span>
-            </div>`;
-      }
-    }
-
-    const showBonusBtn = q.bonus && state.revealed && !scores.bonusRevealed
-      ? `<button id="show-bonus-btn">Näytä ${Array.isArray(q.bonus) ? 'bonustehtävät' : 'bonustehtävä'}</button>`
-      : '';
-
-    const answerHtml = state.revealed ? `
-      <div class="answer">
-        <span class="label">Oikea vastaus</span>
-        <span class="text">${q.answerText}</span>
-      </div>
-      ${bonusBlock}
-      ${showBonusBtn ? `<div class="actions">${showBonusBtn}</div>` : ''}
-      <div class="scoring">
-        <label>
-          Pekan pisteet
-          <input type="number" class="pekka-input" id="pekka-input" value="${scores.pekka}" step="1" />
-        </label>
-        <label>
-          Yleisön pisteet
-          <input type="number" class="yleiso-input" id="yleiso-input" value="${scores.yleiso}" step="1" />
-        </label>
-      </div>
-    ` : '';
-
-    const actionsHtml = `
-      <div class="actions">
-        ${!state.revealed
-          ? '<button id="reveal-btn">Näytä oikea vastaus</button>'
-          : `<button id="next-btn">${state.index === questions.length - 1 ? 'Lopputulokset' : 'Seuraava kysymys'}</button>`
-        }
-        ${state.index > 0 ? '<button class="secondary" id="prev-btn">Edellinen</button>' : ''}
-      </div>
-    `;
-
-    card.innerHTML = `
-      <div class="progress">Kysymys ${state.index + 1} / ${state.index === 0 ? 26 : questions.length}</div>
-      <h2 class="question">${q.q}</h2>
-      ${choicesHtml}
-      ${answerHtml}
-      ${actionsHtml}
-    `;
-
-    const revealBtn = document.getElementById("reveal-btn");
-    if (revealBtn) revealBtn.addEventListener("click", () => {
-      state.revealed = true;
-      render();
-    });
-
-    const showBonusAnswerBtn = document.getElementById("show-bonus-answer-btn");
-    if (showBonusAnswerBtn) showBonusAnswerBtn.addEventListener("click", () => {
-      scores.bonusAnswerRevealed = true;
-      render();
-    });
-
-    document.querySelectorAll(".show-bonus-item-answer").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const idx = Number(btn.dataset.idx);
-        scores.bonusItemAnswerRevealed[idx] = true;
-        render();
-      });
-    });
-
-    const showBonus = document.getElementById("show-bonus-btn");
-    if (showBonus) showBonus.addEventListener("click", () => {
-      scores.bonusRevealed = true;
-      if (isPrank) {
-        scores.bonusPrankPhase = 'loading';
-        setTimeout(() => {
-          scores.bonusPrankPhase = 'error';
-          render();
-        }, 15000);
-      }
-      render();
-    });
-
-    const nextBtn = document.getElementById("next-btn");
-    if (nextBtn) nextBtn.addEventListener("click", () => {
-      state.index += 1;
-      state.revealed = false;
-      render();
-    });
-
-    const prevBtn = document.getElementById("prev-btn");
-    if (prevBtn) prevBtn.addEventListener("click", () => {
-      state.index -= 1;
-      state.revealed = true;
-      render();
-    });
-
-    const pekkaInput = document.getElementById("pekka-input");
-    const yleisoInput = document.getElementById("yleiso-input");
-    if (pekkaInput) pekkaInput.addEventListener("input", e => {
-      scores.pekka = Number(e.target.value) || 0;
-      recalcTotals();
-    });
-    if (yleisoInput) yleisoInput.addEventListener("input", e => {
-      scores.yleiso = Number(e.target.value) || 0;
-      recalcTotals();
-    });
   }
 
-  function renderFinal() {
-    let winnerText;
-    if (state.pekka > state.yleiso) {
-      winnerText = "Pekka voitti!";
-    } else if (state.yleiso > state.pekka) {
-      winnerText = "Yleisö voitti!";
+  function pressed(e) {
+    if (e && e.cancelable) e.preventDefault();
+    if (state === "run") {
+      jump();
     } else {
-      winnerText = "Tasapeli!";
+      state = "run";
+      reset();
+    }
+  }
+  canvas.addEventListener("touchstart", pressed, { passive: false });
+  canvas.addEventListener("mousedown", pressed);
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.code === "ArrowUp") pressed(e);
+  });
+
+  function spawnObstacle() {
+    const r = Math.random();
+    let o;
+    if (r < 0.45) {
+      o = { type: "aita", w: 20 * unit, h: 34 * unit };          // aidanpätkä
+    } else if (r < 0.75) {
+      o = { type: "tonkka", w: 22 * unit, h: 30 * unit };        // maitotonkka
+    } else {
+      o = { type: "possu", w: 40 * unit, h: 26 * unit, ph: 0 };  // possu
+    }
+    o.x = W + o.w;
+    obstacles.push(o);
+    const minGap = speed * 0.6 + 180 * unit;
+    spawnGap = minGap + Math.random() * 280 * unit;
+  }
+
+  function spawnPickup() {
+    // Pössykkä leijuu joko hyppykorkeudella tai matalalla
+    const high = Math.random() < 0.6;
+    pickups.push({
+      x: W + 30 * unit,
+      y: groundY - (high ? 90 + Math.random() * 40 : 45) * unit,
+      r: 16 * unit,
+      bob: Math.random() * Math.PI * 2
+    });
+    pickupGap = speed * (1.8 + Math.random() * 2.2);
+  }
+
+  function endGame() {
+    state = "over";
+    ukot += 1;
+    if (guns > highScore) highScore = guns;
+    try {
+      localStorage.setItem(HS_KEY, String(highScore));
+      localStorage.setItem(UKKO_KEY, String(ukot));
+    } catch (e) {}
+  }
+
+  function update(dt) {
+    if (state !== "run") return;
+
+    speed = Math.min(speed + 7 * unit * dt, W * 1.3);
+    distance += speed * dt;
+    meters = Math.floor(distance / (30 * unit));
+
+    // Pelaaja
+    player.vy += 1500 * unit * dt;
+    player.y += player.vy * dt;
+    if (player.y >= groundY - player.h) {
+      player.y = groundY - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+    if (player.onGround) player.legPhase += dt * 14;
+    if (stumbleT > 0) stumbleT -= dt;
+
+    // Isä kirii tasaisesti ja karjaisun aikana rynnistää
+    let closing = 7 * unit;
+    if (yellShow > 0) closing += 24 * unit;
+    gap -= closing * dt;
+
+    // Karjaisu
+    yellT -= dt;
+    if (yellT <= 0) {
+      yellShow = 2;
+      yellT = 6 + Math.random() * 5;
+      yellSound();
+    }
+    if (yellShow > 0) yellShow -= dt;
+
+    // Esteet ja pössykät
+    spawnGap -= speed * dt;
+    if (spawnGap <= 0) spawnObstacle();
+    pickupGap -= speed * dt;
+    if (pickupGap <= 0) spawnPickup();
+
+    for (const o of obstacles) {
+      o.x -= speed * dt;
+      if (o.type === "possu") o.ph += dt * 10;
+    }
+    obstacles = obstacles.filter((o) => o.x + o.w > -10);
+    for (const p of pickups) { p.x -= speed * dt; p.bob += dt * 4; }
+    pickups = pickups.filter((p) => p.x + p.r > -10);
+
+    // Taustapilvet
+    for (const c of clouds) {
+      c.x -= speed * 0.1 * dt * c.s;
+      if (c.x < -80) { c.x = W + 80; c.y = (0.08 + Math.random() * 0.22) * H; }
     }
 
-    card.innerHTML = `
-      <div class="final">
-        <h2>Visa päättyi</h2>
-        <div class="totals">
-          <div class="pekka"><span class="num">${state.pekka}</span>Pekka</div>
-          <div class="yleiso"><span class="num">${state.yleiso}</span>Yleisö</div>
-        </div>
-        <div class="winner">${winnerText}</div>
+    // Törmäys esteeseen: Eemeli kompastuu ja isä pääsee lähemmäs
+    if (stumbleT <= 0) {
+      const px = player.x + player.w * 0.15, pw = player.w * 0.7;
+      const py = player.y + player.h * 0.1, ph = player.h * 0.9;
+      for (const o of obstacles) {
+        const oy = groundY - o.h;
+        if (px < o.x + o.w * 0.85 && px + pw > o.x + o.w * 0.15 && py + ph > oy + o.h * 0.15) {
+          stumbleT = 1.2;
+          gap -= W * 0.11;
+          speed = Math.max(speed * 0.8, 200 * unit);
+          break;
+        }
+      }
+    }
 
-        <div class="actions" style="justify-content:center; margin-top:1.5rem;">
-          <button class="secondary" id="back-btn">Takaisin viimeiseen kysymykseen</button>
-          <button class="secondary" id="restart-btn">Aloita alusta</button>
-        </div>
-      </div>
-    `;
+    // Pössykän poiminta: Eemeli innostuu ja pinkoo isältä karkuun
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    for (let i = pickups.length - 1; i >= 0; i--) {
+      const p = pickups[i];
+      const dx = cx - p.x, dy = cy - (p.y + Math.sin(p.bob) * 5 * unit);
+      if (dx * dx + dy * dy < (p.r + player.w * 0.5) ** 2) {
+        pickups.splice(i, 1);
+        guns += 1;
+        gap = Math.min(gap + W * 0.09, maxGap());
+      }
+    }
 
-    document.getElementById("back-btn").addEventListener("click", () => {
-      state.index = questions.length - 1;
-      state.revealed = true;
-      render();
-    });
-    document.getElementById("restart-btn").addEventListener("click", () => {
-      if (!confirm("Aloitetaanko alusta? Kaikki pisteet nollataan.")) return;
-      state.index = 0;
-      state.revealed = false;
-      state.perQuestion = questions.map(() => ({ pekka: 0, yleiso: 0, bonusRevealed: false, bonusAnswerRevealed: false, bonusItemAnswerRevealed: [] }));
-      recalcTotals();
-      render();
+    if (gap <= player.w * 1.1) endGame();
+  }
+
+  function drawBackground() {
+    ctx.fillStyle = C.sky;
+    ctx.fillRect(0, 0, W, groundY);
+
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, 34 * c.s, 12 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x + 22 * c.s, c.y + 4 * c.s, 24 * c.s, 10 * c.s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Loivat pellot ja Kissankulman punainen talo taustalla
+    ctx.fillStyle = C.hill;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.quadraticCurveTo(W * 0.3, groundY - H * 0.14, W * 0.6, groundY - H * 0.05);
+    ctx.quadraticCurveTo(W * 0.85, groundY - H * 0.12, W, groundY - H * 0.03);
+    ctx.lineTo(W, groundY);
+    ctx.closePath();
+    ctx.fill();
+
+    const hx = W * 0.68, hy = groundY - 66 * unit, hw = 72 * unit, hh = 42 * unit;
+    ctx.fillStyle = C.house;
+    ctx.fillRect(hx, hy + 24 * unit, hw, hh - 24 * unit);
+    ctx.beginPath();
+    ctx.moveTo(hx - 6 * unit, hy + 24 * unit);
+    ctx.lineTo(hx + hw / 2, hy);
+    ctx.lineTo(hx + hw + 6 * unit, hy + 24 * unit);
+    ctx.closePath();
+    ctx.fillStyle = "#7a4a3a";
+    ctx.fill();
+    ctx.fillStyle = C.houseTrim;
+    ctx.fillRect(hx + 10 * unit, hy + 30 * unit, 12 * unit, 10 * unit);
+    ctx.fillRect(hx + hw - 22 * unit, hy + 30 * unit, 12 * unit, 10 * unit);
+
+    // Maa: polku ja nurmi
+    ctx.fillStyle = C.field;
+    ctx.fillRect(0, groundY, W, 6 * unit);
+    ctx.fillStyle = C.path;
+    ctx.fillRect(0, groundY + 6 * unit, W, H - groundY);
+    ctx.fillStyle = C.fieldDark;
+    ctx.fillRect(0, groundY + 4 * unit, W, 2 * unit);
+  }
+
+  function drawObstacle(o) {
+    const y = groundY - o.h;
+    if (o.type === "aita") {
+      ctx.fillStyle = C.fence;
+      ctx.fillRect(o.x + o.w * 0.35, y, o.w * 0.3, o.h);
+      ctx.fillRect(o.x - o.w * 0.4, y + o.h * 0.2, o.w * 1.8, o.h * 0.16);
+      ctx.fillRect(o.x - o.w * 0.4, y + o.h * 0.6, o.w * 1.8, o.h * 0.16);
+    } else if (o.type === "tonkka") {
+      ctx.fillStyle = C.churn;
+      ctx.beginPath();
+      ctx.roundRect(o.x, y + o.h * 0.15, o.w, o.h * 0.85, 4 * unit);
+      ctx.fill();
+      ctx.fillRect(o.x + o.w * 0.2, y, o.w * 0.6, o.h * 0.2);
+      ctx.fillStyle = "#6f7a85";
+      ctx.fillRect(o.x, y + o.h * 0.35, o.w, o.h * 0.08);
+    } else {
+      // Possu
+      ctx.fillStyle = C.pig;
+      ctx.beginPath();
+      ctx.ellipse(o.x + o.w * 0.45, y + o.h * 0.55, o.w * 0.42, o.h * 0.42, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(o.x + o.w * 0.85, y + o.h * 0.4, o.h * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = C.pigDark;
+      ctx.beginPath();
+      ctx.ellipse(o.x + o.w * 0.98, y + o.h * 0.42, o.h * 0.12, o.h * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const lp = Math.sin(o.ph) * 3 * unit;
+      ctx.strokeStyle = C.pigDark;
+      ctx.lineWidth = 3 * unit;
+      ctx.beginPath();
+      ctx.moveTo(o.x + o.w * 0.3, y + o.h * 0.8);
+      ctx.lineTo(o.x + o.w * 0.3 + lp, groundY);
+      ctx.moveTo(o.x + o.w * 0.6, y + o.h * 0.8);
+      ctx.lineTo(o.x + o.w * 0.6 - lp, groundY);
+      ctx.stroke();
+    }
+  }
+
+  function drawGun(x, y, s, angle) {
+    // Pössykkä: Alfredin veistämä puupyssy
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle || -0.3);
+    ctx.fillStyle = C.woodDark;
+    ctx.fillRect(-s, -s * 0.12, s * 1.3, s * 0.24);            // piippu
+    ctx.fillStyle = C.wood;
+    ctx.beginPath();                                            // tukki
+    ctx.moveTo(s * 0.3, -s * 0.14);
+    ctx.lineTo(s * 1.0, s * 0.5);
+    ctx.lineTo(s * 0.72, s * 0.62);
+    ctx.lineTo(s * 0.18, s * 0.14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawEemeli() {
+    const { x, y, w, h } = player;
+    ctx.save();
+    ctx.translate(x, y);
+    if (stumbleT > 0 && Math.floor(stumbleT * 10) % 2 === 0) ctx.globalAlpha = 0.5;
+
+    // Jalat paljain jaloin
+    const swing = player.onGround ? Math.sin(player.legPhase) : 0.6;
+    ctx.strokeStyle = C.skin;
+    ctx.lineWidth = 4 * unit;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, h * 0.66);
+    ctx.lineTo(w * 0.5 + swing * w * 0.42, h);
+    ctx.moveTo(w * 0.5, h * 0.66);
+    ctx.lineTo(w * 0.5 - swing * w * 0.42, h);
+    ctx.stroke();
+
+    // Siniset housut ja takki
+    ctx.fillStyle = C.pants;
+    ctx.fillRect(w * 0.22, h * 0.5, w * 0.56, h * 0.2);
+    ctx.fillStyle = C.shirt;
+    ctx.fillRect(w * 0.2, h * 0.3, w * 0.6, h * 0.24);
+
+    // Kädet heiluu
+    ctx.strokeStyle = C.shirt;
+    ctx.lineWidth = 4 * unit;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, h * 0.36);
+    ctx.lineTo(w * 0.5 - swing * w * 0.4, h * 0.52);
+    ctx.moveTo(w * 0.5, h * 0.36);
+    ctx.lineTo(w * 0.5 + swing * w * 0.4, h * 0.52);
+    ctx.stroke();
+
+    // Pyöreä poskipää ja pellavatukka
+    ctx.fillStyle = C.skin;
+    ctx.beginPath();
+    ctx.arc(w * 0.52, h * 0.17, w * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.hair;
+    ctx.beginPath();
+    ctx.arc(w * 0.48, h * 0.12, w * 0.3, Math.PI * 0.85, Math.PI * 1.95);
+    ctx.fill();
+    // Tukkaa otsalle
+    ctx.fillRect(w * 0.62, h * 0.02, w * 0.16, h * 0.07);
+
+    // Sininen myssy
+    ctx.fillStyle = C.cap;
+    ctx.beginPath();
+    ctx.arc(w * 0.52, h * 0.1, w * 0.31, Math.PI * 0.95, Math.PI * 1.98);
+    ctx.fill();
+    ctx.fillRect(w * 0.52, h * 0.02, w * 0.46, h * 0.05); // lippa
+
+    // Silmä ja hymy
+    ctx.fillStyle = C.ink;
+    ctx.beginPath();
+    ctx.arc(w * 0.64, h * 0.16, 1.6 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 1.2 * unit;
+    ctx.beginPath();
+    ctx.arc(w * 0.6, h * 0.2, w * 0.12, 0.2, Math.PI * 0.8);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawDad() {
+    const dw = 30 * unit, dh = 52 * unit;
+    const dx = player.x - gap - dw;
+    const dy = groundY - dh;
+    ctx.save();
+    ctx.translate(dx, dy);
+
+    // Jalat
+    const swing = Math.sin(player.legPhase * 0.9 + 1);
+    ctx.strokeStyle = C.dad;
+    ctx.lineWidth = 5 * unit;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(dw * 0.5, dh * 0.62);
+    ctx.lineTo(dw * 0.5 + swing * dw * 0.45, dh);
+    ctx.moveTo(dw * 0.5, dh * 0.62);
+    ctx.lineTo(dw * 0.5 - swing * dw * 0.45, dh);
+    ctx.stroke();
+
+    // Vartalo
+    ctx.fillStyle = C.dadShirt;
+    ctx.fillRect(dw * 0.15, dh * 0.28, dw * 0.7, dh * 0.38);
+    ctx.fillStyle = C.dad;
+    ctx.fillRect(dw * 0.15, dh * 0.5, dw * 0.7, dh * 0.16);
+
+    // Nyrkkiä puiva käsi
+    ctx.strokeStyle = C.dadShirt;
+    ctx.lineWidth = 5 * unit;
+    ctx.beginPath();
+    ctx.moveTo(dw * 0.6, dh * 0.34);
+    ctx.lineTo(dw * 1.1, dh * 0.12 + Math.sin(player.legPhase * 2) * 4 * unit);
+    ctx.stroke();
+    ctx.fillStyle = C.dadFace;
+    ctx.beginPath();
+    ctx.arc(dw * 1.15, dh * 0.12 + Math.sin(player.legPhase * 2) * 4 * unit, 4 * unit, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Punakka pää, pulisongit ja hattu
+    ctx.fillStyle = C.dadFace;
+    ctx.beginPath();
+    ctx.arc(dw * 0.5, dh * 0.16, dw * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6a4a2a";
+    ctx.fillRect(dw * 0.16, dh * 0.12, dw * 0.12, dh * 0.12); // pulisonki
+    ctx.fillStyle = C.ink;
+    ctx.beginPath();
+    ctx.arc(dw * 0.62, dh * 0.15, 1.6 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    // Auki huutava suu
+    const mouth = yellShow > 0 ? 0.09 : 0.04;
+    ctx.fillStyle = "#5a2a1a";
+    ctx.beginPath();
+    ctx.ellipse(dw * 0.6, dh * 0.24, dw * 0.1, dh * mouth, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Hattu
+    ctx.fillStyle = "#4a3a26";
+    ctx.fillRect(dw * 0.12, dh * 0.0, dw * 0.76, dh * 0.05);
+    ctx.fillRect(dw * 0.26, dh * -0.1, dw * 0.48, dh * 0.11);
+
+    ctx.restore();
+
+    // Puhekupla
+    if (yellShow > 0 && state === "run") {
+      const bx = Math.max(dx + dw * 0.5, 10), by = dy - 34 * unit;
+      ctx.fillStyle = C.paper;
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 1.5;
+      const tw = 110 * unit;
+      ctx.beginPath();
+      ctx.roundRect(bx - 8 * unit, by - 18 * unit, tw, 26 * unit, 8 * unit);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx + 6 * unit, by + 8 * unit);
+      ctx.lineTo(bx + 14 * unit, by + 20 * unit);
+      ctx.lineTo(bx + 20 * unit, by + 8 * unit);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = C.red;
+      ctx.font = `bold ${13 * unit}px Georgia, serif`;
+      ctx.textAlign = "left";
+      ctx.fillText("EEEEMEEELIII!!!", bx, by);
+    }
+  }
+
+  function drawHud() {
+    ctx.fillStyle = C.ink;
+    ctx.textAlign = "left";
+    ctx.font = `bold ${17 * unit}px Georgia, serif`;
+    ctx.fillText(`Pössykät: ${guns}`, 14, H * 0.14);
+    ctx.font = `${13 * unit}px Georgia, serif`;
+    ctx.fillText(`Matka: ${meters} m`, 14, H * 0.14 + 20 * unit);
+    ctx.fillText(`Ennätys: ${highScore} pössykkää`, 14, H * 0.14 + 38 * unit);
+  }
+
+  function drawPanel(title, lines) {
+    const pw = Math.min(W * 0.88, 430);
+    const ph = (72 + lines.length * 25) * unit;
+    const px = (W - pw) / 2;
+    const py = H * 0.26;
+    ctx.fillStyle = "rgba(255,250,240,0.96)";
+    ctx.strokeStyle = C.red;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(px, py, pw, ph, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = C.red;
+    ctx.textAlign = "center";
+    ctx.font = `bold ${21 * unit}px Georgia, serif`;
+    ctx.fillText(title, W / 2, py + 33 * unit);
+    ctx.fillStyle = C.ink;
+    ctx.font = `${14 * unit}px Georgia, serif`;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, W / 2, py + (58 + i * 25) * unit);
     });
   }
 
-  recalcTotals();
-  render();
+  function draw() {
+    drawBackground();
+    for (const o of obstacles) drawObstacle(o);
+    for (const p of pickups) {
+      drawGun(p.x, p.y + Math.sin(p.bob) * 5 * unit, p.r, -0.3 + Math.sin(p.bob * 0.5) * 0.1);
+    }
+    drawDad();
+    drawEemeli();
+    drawHud();
 
-  const audio = document.getElementById("goal-audio");
-  const playBtn = document.getElementById("play-goal");
-  const stopBtn = document.getElementById("stop-goal");
+    if (state === "start") {
+      drawPanel("Eemeli karkuteillä", [
+        "Eemeli on taas tehnyt jäynän ja isä",
+        "on kannoilla! Napauta ruutua, niin",
+        "Eemeli hyppää aitojen, tonkkien ja",
+        "possujen yli. Nappaa matkalta",
+        "pössykät talteen!",
+        "",
+        "Napauta aloittaaksesi"
+      ]);
+    } else if (state === "over") {
+      drawPanel("Isä sai kiinni!", [
+        `Eemeli joutui vajaan ja veisteli`,
+        `puu-ukon numero ${ukot}.`,
+        `Pössykät: ${guns} — Matka: ${meters} m`,
+        `Ennätys: ${highScore} pössykkää`,
+        "",
+        "Napauta ja pinkaise uudelleen"
+      ]);
+    }
+  }
 
-  audio.src = "maalilaulu.wav";
-  audio.addEventListener("canplaythrough", () => {
-    playBtn.disabled = false;
-    stopBtn.disabled = false;
-  }, { once: true });
-  audio.addEventListener("error", () => {});
-
-  playBtn.addEventListener("click", () => {
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
+  function loop(t) {
+    const dt = Math.min((t - lastTime) / 1000, 0.05);
+    lastTime = t;
+    update(dt);
+    if (state !== "run") player.legPhase += dt * 10;
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame((t) => {
+    lastTime = t;
+    requestAnimationFrame(loop);
   });
-  stopBtn.addEventListener("click", () => {
-    audio.pause();
-    audio.currentTime = 0;
-  });
+})();
 </script>
 </body>
 </html>
