@@ -99,7 +99,7 @@
     saunaRoof: "#4a3a2a",
     liinaDress: "#5a7a9a",
     liinaApron: "#fffaf0",
-    anttonShirt: "#8a9a6a",
+    aatuShirt: "#8a9a6a",
     heart: "#d4506a",
     ink: "#2b2417",
     paper: "#fffaf0",
@@ -226,13 +226,36 @@
     if (music.timer) { clearInterval(music.timer); music.timer = null; }
   }
 
+  // Isän karjaisu puhesynteesillä. Pelkkä lang-koodi ei kaikilla
+  // laitteilla riitä, joten etsitään ääniluettelosta oikeasti
+  // suomenkielinen ääni (esim. Googlen/Applen suomi-ääni).
+  let fiVoice = null;
+  function pickFiVoice() {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      const voices = window.speechSynthesis.getVoices() || [];
+      fiVoice =
+        voices.find((v) => /^fi([-_]|$)/i.test(v.lang) && /google|natural|premium/i.test(v.name)) ||
+        voices.find((v) => /^fi([-_]|$)/i.test(v.lang)) ||
+        null;
+    } catch (e) {}
+  }
+  pickFiVoice();
+  try {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.onvoiceschanged = pickFiVoice;
+    }
+  } catch (e) {}
+
   function yellSound() {
     if (muted) return;
     try {
       if (!("speechSynthesis" in window)) return;
+      if (!fiVoice) pickFiVoice();
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance("Eeeemeeeliii!");
       u.lang = "fi-FI";
+      if (fiVoice) u.voice = fiVoice;
       u.rate = 0.7;
       u.pitch = 0.5;
       u.volume = 1;
@@ -411,7 +434,7 @@
     for (const p of pickups) { p.x -= speed * dt; p.bob += dt * 4; }
     pickups = pickups.filter((p) => p.x + p.r > -10);
 
-    // Sauna, jonka takana Liina ja Antton pussailevat. Kun Eemeli
+    // Sauna, jonka takana Liina ja Aatu pussailevat. Kun Eemeli
     // yllättää heidät, isä pysähtyy paheksumaan ja jää jälkeen.
     saunaGap -= speed * dt;
     if (saunaGap <= 0) spawnSauna();
@@ -620,20 +643,20 @@
     ctx.fillStyle = C.saunaRoof;
     ctx.fillRect(s.x + s.w * 0.12, y + h * 0.32, 16 * unit, h * 0.68);
 
-    // Liina ja Antton saunan takana (oikealla nurkalla)
+    // Liina ja Aatu saunan takana (oikealla nurkalla)
     const cx = s.x + s.w + 12 * unit;
     const ch = 36 * unit;
     const cy = groundY - ch;
     const lean = s.startled ? -0.35 : 0.22 + Math.sin(s.ph) * 0.03;
     const gapX = s.startled ? 16 * unit : 5 * unit;
 
-    // Antton: vihreä paita, tummat housut, lätsä
+    // Aatu: vihreä paita, tummat housut, lätsä
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(lean);
     ctx.fillStyle = "#4a4436";
     ctx.fillRect(-4 * unit, ch * 0.55, 8 * unit, ch * 0.45);
-    ctx.fillStyle = C.anttonShirt;
+    ctx.fillStyle = C.aatuShirt;
     ctx.fillRect(-5 * unit, ch * 0.22, 10 * unit, ch * 0.36);
     ctx.fillStyle = C.skin;
     ctx.beginPath();
