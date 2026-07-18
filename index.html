@@ -95,6 +95,12 @@
     wood: "#b58a55",
     woodDark: "#8a6535",
     idaDress: "#b5453a",
+    sauna: "#6f5a42",
+    saunaRoof: "#4a3a2a",
+    liinaDress: "#5a7a9a",
+    liinaApron: "#fffaf0",
+    anttonShirt: "#8a9a6a",
+    heart: "#d4506a",
     ink: "#2b2417",
     paper: "#fffaf0",
     red: "#a63a2a"
@@ -237,9 +243,10 @@
   // Pelitila: "start" | "run" | "over"
   let state = "start";
   let speed = 0, distance = 0, meters = 0, guns = 0;
-  let obstacles = [], pickups = [], clouds = [], idas = [];
-  let spawnGap = 0, pickupGap = 0, idaGap = 0;
+  let obstacles = [], pickups = [], clouds = [], idas = [], saunas = [];
+  let spawnGap = 0, pickupGap = 0, idaGap = 0, saunaGap = 0;
   let idaT = 0;            // aikaa jonka Iida vielä viivyttää isää
+  let saunaT = 0;          // aikaa jonka isä paheksuu pussailua
   let gap = 0;             // Eemelin etumatka isään (px)
   let stumbleT = 0;        // törmäyksen jälkeinen suoja-aika
   let yellT = 0;           // aikaa seuraavaan karjaisuun
@@ -259,6 +266,9 @@
     pickupGap = speed * 2.5;
     idaGap = speed * 8;
     idaT = 0;
+    saunas = [];
+    saunaGap = speed * 13;
+    saunaT = 0;
     gap = W * 0.46;
     stumbleT = 0;
     yellT = 4 + Math.random() * 4;
@@ -333,6 +343,11 @@
     idaGap = speed * (9 + Math.random() * 8);
   }
 
+  function spawnSauna() {
+    saunas.push({ x: W + 20 * unit, w: 92 * unit, startled: false, ph: Math.random() * Math.PI * 2 });
+    saunaGap = speed * (16 + Math.random() * 12);
+  }
+
   function endGame() {
     state = "over";
     stopMusic();
@@ -395,6 +410,24 @@
     obstacles = obstacles.filter((o) => o.x + o.w > -10);
     for (const p of pickups) { p.x -= speed * dt; p.bob += dt * 4; }
     pickups = pickups.filter((p) => p.x + p.r > -10);
+
+    // Sauna, jonka takana Liina ja Antton pussailevat. Kun Eemeli
+    // yllättää heidät, isä pysähtyy paheksumaan ja jää jälkeen.
+    saunaGap -= speed * dt;
+    if (saunaGap <= 0) spawnSauna();
+    for (const s of saunas) {
+      s.x -= speed * dt;
+      s.ph += dt * 3;
+      if (!s.startled && player.x + player.w > s.x + s.w * 0.3) {
+        s.startled = true;
+        saunaT = 2.4;
+      }
+    }
+    saunas = saunas.filter((s) => s.x + s.w * 1.6 > -10);
+    if (saunaT > 0) {
+      saunaT -= dt;
+      gap = Math.min(gap + 14 * unit * dt, maxGap());
+    }
 
     // Iida odottelee polun varrella; ohi juostessa hän jää viivyttämään isää
     idaGap -= speed * dt;
@@ -545,6 +578,119 @@
     ctx.closePath();
     ctx.fill();
     ctx.restore();
+  }
+
+  function drawHeart(x, y, s) {
+    ctx.fillStyle = C.heart;
+    ctx.beginPath();
+    ctx.arc(x - s * 0.35, y, s * 0.4, 0, Math.PI * 2);
+    ctx.arc(x + s * 0.35, y, s * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.72, y + s * 0.12);
+    ctx.lineTo(x, y + s);
+    ctx.lineTo(x + s * 0.72, y + s * 0.12);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawSauna(s) {
+    const h = 58 * unit;
+    const y = groundY - h;
+    // Hirsirakennus, savupiippu ja ovi
+    ctx.fillStyle = C.sauna;
+    ctx.fillRect(s.x, y, s.w, h);
+    ctx.strokeStyle = "rgba(0,0,0,0.15)";
+    ctx.lineWidth = 1.5 * unit;
+    for (let i = 1; i < 5; i++) {
+      ctx.beginPath();
+      ctx.moveTo(s.x, y + (h / 5) * i);
+      ctx.lineTo(s.x + s.w, y + (h / 5) * i);
+      ctx.stroke();
+    }
+    ctx.fillStyle = C.saunaRoof;
+    ctx.beginPath();
+    ctx.moveTo(s.x - 8 * unit, y);
+    ctx.lineTo(s.x + s.w * 0.5, y - 22 * unit);
+    ctx.lineTo(s.x + s.w + 8 * unit, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#5a5a5a";
+    ctx.fillRect(s.x + s.w * 0.68, y - 30 * unit, 9 * unit, 14 * unit);
+    ctx.fillStyle = C.saunaRoof;
+    ctx.fillRect(s.x + s.w * 0.12, y + h * 0.32, 16 * unit, h * 0.68);
+
+    // Liina ja Antton saunan takana (oikealla nurkalla)
+    const cx = s.x + s.w + 12 * unit;
+    const ch = 36 * unit;
+    const cy = groundY - ch;
+    const lean = s.startled ? -0.35 : 0.22 + Math.sin(s.ph) * 0.03;
+    const gapX = s.startled ? 16 * unit : 5 * unit;
+
+    // Antton: vihreä paita, tummat housut, lätsä
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(lean);
+    ctx.fillStyle = "#4a4436";
+    ctx.fillRect(-4 * unit, ch * 0.55, 8 * unit, ch * 0.45);
+    ctx.fillStyle = C.anttonShirt;
+    ctx.fillRect(-5 * unit, ch * 0.22, 10 * unit, ch * 0.36);
+    ctx.fillStyle = C.skin;
+    ctx.beginPath();
+    ctx.arc(0, ch * 0.1, 6 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#6a5a3a";
+    ctx.beginPath();
+    ctx.arc(0, ch * 0.06, 6.2 * unit, Math.PI, 0);
+    ctx.fill();
+    ctx.restore();
+
+    // Liina: sininen mekko, essu ja nuttura
+    ctx.save();
+    ctx.translate(cx + gapX + 10 * unit, cy);
+    ctx.rotate(-lean);
+    ctx.fillStyle = C.liinaDress;
+    ctx.beginPath();
+    ctx.moveTo(0, ch * 0.2);
+    ctx.lineTo(8 * unit, ch);
+    ctx.lineTo(-8 * unit, ch);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = C.liinaApron;
+    ctx.beginPath();
+    ctx.moveTo(0, ch * 0.45);
+    ctx.lineTo(5 * unit, ch);
+    ctx.lineTo(-5 * unit, ch);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = C.skin;
+    ctx.beginPath();
+    ctx.arc(0, ch * 0.1, 6 * unit, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.hair;
+    ctx.beginPath();
+    ctx.arc(0, ch * 0.05, 6 * unit, Math.PI * 0.9, Math.PI * 2.05);
+    ctx.arc(6 * unit, ch * 0.02, 3 * unit, 0, Math.PI * 2); // nuttura
+    ctx.fill();
+    ctx.restore();
+
+    // Sydämet leijuu — tai säikähdyksen huudahdus
+    if (!s.startled) {
+      drawHeart(cx + 8 * unit, cy - 14 * unit + Math.sin(s.ph) * 3 * unit, 7 * unit);
+      drawHeart(cx + 20 * unit, cy - 24 * unit + Math.cos(s.ph * 1.3) * 3 * unit, 4.5 * unit);
+    } else {
+      ctx.fillStyle = C.paper;
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(cx - 4 * unit, cy - 34 * unit, 62 * unit, 20 * unit, 7 * unit);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = C.red;
+      ctx.font = `bold ${11 * unit}px Georgia, serif`;
+      ctx.textAlign = "left";
+      ctx.fillText("Hupsista!", cx + 2 * unit, cy - 20 * unit);
+    }
   }
 
   function drawIda(x, ph, tugging) {
@@ -769,6 +915,29 @@
       ctx.fillText("Isä! Kato!", bx, by);
     }
 
+    // Isä paheksuu saunan takana pussailua
+    if (saunaT > 0 && idaT <= 0 && state === "run") {
+      const bx = Math.max(dx + dw * 0.5, 10), by = dy - 30 * unit;
+      ctx.fillStyle = C.paper;
+      ctx.strokeStyle = C.ink;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(bx - 8 * unit, by - 16 * unit, 70 * unit, 22 * unit, 7 * unit);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(bx + 2 * unit, by + 6 * unit);
+      ctx.lineTo(bx + 9 * unit, by + 16 * unit);
+      ctx.lineTo(bx + 14 * unit, by + 6 * unit);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = C.red;
+      ctx.font = `bold ${12 * unit}px Georgia, serif`;
+      ctx.textAlign = "left";
+      ctx.fillText("No mutta!!", bx, by);
+    }
+
     // Puhekupla
     if (yellShow > 0 && state === "run") {
       const bx = Math.max(dx + dw * 0.5, 10), by = dy - 34 * unit;
@@ -829,6 +998,7 @@
 
   function draw() {
     drawBackground();
+    for (const s of saunas) drawSauna(s);
     for (const o of obstacles) drawObstacle(o);
     for (const p of pickups) {
       drawGun(p.x, p.y + Math.sin(p.bob) * 5 * unit, p.r, -0.3 + Math.sin(p.bob * 0.5) * 0.1);
