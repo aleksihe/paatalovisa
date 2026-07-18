@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Tukkilaisjuoksu – Kalle Päätalo -peli</title>
+<style>
+  :root {
+    --bg: #f4ecd8;
+    --paper: #fffaf0;
+    --ink: #2b1d10;
+    --accent: #7a3b1f;
+    --accent-soft: #c98a5c;
+    --pekka: #1f5f3a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: var(--accent);
+    color: var(--paper);
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    z-index: 5;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  header a {
+    color: var(--paper);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+  #game {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tukkilaisjuoksu</h1>
+  <a href="index.html">&larr; Takaisin visaan</a>
+</header>
+<canvas id="game"></canvas>
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const COLORS = {
+    sky: "#cfe3ec",
+    skyHill: "#9db8a5",
+    forest: "#3f6b4d",
+    forestDark: "#2e5039",
+    ground: "#8a6a45",
+    groundTop: "#6f8f5a",
+    trunk: "#5a3d24",
+    log: "#8a5a2e",
+    logEnd: "#c9a06a",
+    kalle: "#1f5f3a",
+    skin: "#e8c39e",
+    hat: "#7a3b1f",
+    ink: "#2b1d10",
+    paper: "#fffaf0",
+    accent: "#7a3b1f"
+  };
+
+  // Pelimaailma mitoitetaan suhteessa näkymän korkeuteen, jotta peli
+  // tuntuu samalta pysty- ja vaakanäytöllä.
+  let W = 0, H = 0, dpr = 1, groundY = 0, unit = 0;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    groundY = H * 0.78;
+    unit = H / 480;
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const HS_KEY = "tukkilaisjuoksu-ennatys";
+  let highScore = 0;
+  try { highScore = Number(localStorage.getItem(HS_KEY)) || 0; } catch (e) {}
+
+  // Pelitila: "start" | "run" | "over"
+  let state = "start";
+  let score = 0;
+  let speed = 0;
+  let distance = 0;
+  let obstacles = [];
+  let clouds = [];
+  let trees = [];
+  let spawnGap = 0;
+  let lastTime = 0;
+
+  const player = {
+    x: 0, y: 0, vy: 0,
+    w: 0, h: 0,
+    onGround: true,
+    legPhase: 0
+  };
+
+  function reset() {
+    score = 0;
+    distance = 0;
+    // Vauhti rajataan ruudun leveyden mukaan, jotta kapealla
+    // pystynäytöllä ehtii reagoida esteisiin.
+    speed = Math.min(260 * unit, W * 0.8); // px/s
+    obstacles = [];
+    spawnGap = speed * 1.5; // armonaika ennen ensimmäistä estettä
+    player.w = 26 * unit;
+    player.h = 46 * unit;
+    player.x = W * 0.18;
+    player.y = groundY - player.h;
+    player.vy = 0;
+    player.onGround = true;
+    player.legPhase = 0;
+    clouds = [];
+    for (let i = 0; i < 4; i++) {
+      clouds.push({ x: Math.random() * W, y: (0.08 + Math.random() * 0.25) * H, s: (0.5 + Math.random()) * unit });
+    }
+    trees = [];
+    for (let i = 0; i < 10; i++) {
+      trees.push({ x: (i / 10) * W + Math.random() * 60, h: (40 + Math.random() * 50) * unit });
+    }
+  }
+  reset();
+
+  function jump() {
+    if (player.onGround) {
+      player.vy = -620 * unit;
+      player.onGround = false;
+    }
+  }
+
+  function pressed(e) {
+    if (e) e.preventDefault();
+    if (state === "start") {
+      state = "run";
+      reset();
+    } else if (state === "run") {
+      jump();
+    } else if (state === "over") {
+      state = "run";
+      reset();
+    }
+  }
+
+  canvas.addEventListener("touchstart", pressed, { passive: false });
+  canvas.addEventListener("mousedown", pressed);
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space" || e.code === "ArrowUp") pressed(e);
+  });
+
+  function spawnObstacle() {
+    // Kanto (matala) tai tukkipino (leveämpi); harvakseltaan korkea halkopino.
+    const r = Math.random();
+    let o;
+    if (r < 0.5) {
+      o = { type: "kanto", w: 26 * unit, h: (28 + Math.random() * 10) * unit };
+    } else if (r < 0.85) {
+      o = { type: "tukki", w: (50 + Math.random() * 30) * unit, h: 22 * unit };
+    } else {
+      o = { type: "pino", w: 34 * unit, h: 44 * unit };
+    }
+    o.x = W + o.w;
+    obstacles.push(o);
+    // Aukko seuraavaan esteeseen kasvaa vauhdin mukana, jotta hyppy ehtii aina.
+    const minGap = speed * 0.55 + 180 * unit;
+    spawnGap = minGap + Math.random() * 260 * unit;
+  }
+
+  function update(dt) {
+    if (state !== "run") return;
+
+    speed = Math.min(speed + 8 * unit * dt, W * 1.4); // kiihtyy tasaisesti, katto leveyden mukaan
+    distance += speed * dt;
+    score = Math.floor(distance / (30 * unit)); // "metrit"
+
+    // Pelaaja
+    player.vy += 1500 * unit * dt;
+    player.y += player.vy * dt;
+    if (player.y >= groundY - player.h) {
+      player.y = groundY - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+    if (player.onGround) player.legPhase += dt * 14;
+
+    // Esteet
+    spawnGap -= speed * dt;
+    if (spawnGap <= 0) spawnObstacle();
+    for (const o of obstacles) o.x -= speed * dt;
+    obstacles = obstacles.filter((o) => o.x + o.w > -10);
+
+    // Taustan rullaus
+    for (const c of clouds) {
+      c.x -= speed * 0.12 * dt * c.s;
+      if (c.x < -80) { c.x = W + 80; c.y = (0.08 + Math.random() * 0.25) * H; }
+    }
+    for (const t of trees) {
+      t.x -= speed * 0.35 * dt;
+      if (t.x < -40) { t.x = W + 40; t.h = (40 + Math.random() * 50) * unit; }
+    }
+
+    // Törmäys (hieman anteeksiantava hitbox)
+    const px = player.x + player.w * 0.15;
+    const pw = player.w * 0.7;
+    const py = player.y + player.h * 0.1;
+    const ph = player.h * 0.9;
+    for (const o of obstacles) {
+      const oy = groundY - o.h;
+      if (px < o.x + o.w * 0.85 && px + pw > o.x + o.w * 0.15 &&
+          py + ph > oy + o.h * 0.15) {
+        state = "over";
+        if (score > highScore) {
+          highScore = score;
+          try { localStorage.setItem(HS_KEY, String(highScore)); } catch (e) {}
+        }
+      }
+    }
+  }
+
+  function drawBackground() {
+    ctx.fillStyle = COLORS.sky;
+    ctx.fillRect(0, 0, W, groundY);
+
+    // Pilvet
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, 34 * c.s, 12 * c.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(c.x + 22 * c.s, c.y + 4 * c.s, 24 * c.s, 10 * c.s, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Vaarat taustalla
+    ctx.fillStyle = COLORS.skyHill;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.quadraticCurveTo(W * 0.25, groundY - H * 0.22, W * 0.5, groundY - H * 0.06);
+    ctx.quadraticCurveTo(W * 0.75, groundY - H * 0.26, W, groundY - H * 0.04);
+    ctx.lineTo(W, groundY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Kuusimetsä
+    for (const t of trees) {
+      const baseY = groundY;
+      ctx.fillStyle = COLORS.forestDark;
+      ctx.beginPath();
+      ctx.moveTo(t.x, baseY - t.h);
+      ctx.lineTo(t.x - t.h * 0.35, baseY);
+      ctx.lineTo(t.x + t.h * 0.35, baseY);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Maa
+    ctx.fillStyle = COLORS.groundTop;
+    ctx.fillRect(0, groundY, W, 6 * unit);
+    ctx.fillStyle = COLORS.ground;
+    ctx.fillRect(0, groundY + 6 * unit, W, H - groundY);
+  }
+
+  function drawObstacle(o) {
+    const y = groundY - o.h;
+    if (o.type === "kanto") {
+      ctx.fillStyle = COLORS.trunk;
+      ctx.fillRect(o.x, y, o.w, o.h);
+      ctx.fillStyle = COLORS.logEnd;
+      ctx.fillRect(o.x, y, o.w, 5 * unit);
+    } else if (o.type === "tukki") {
+      ctx.fillStyle = COLORS.log;
+      const r = o.h / 2;
+      ctx.beginPath();
+      ctx.roundRect(o.x, y, o.w, o.h, r);
+      ctx.fill();
+      ctx.fillStyle = COLORS.logEnd;
+      ctx.beginPath();
+      ctx.ellipse(o.x + r, y + r, r * 0.7, r * 0.85, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Halkopino: kolme kerrosta pyöröjä
+      const r = o.w / 4;
+      ctx.fillStyle = COLORS.log;
+      const rows = [[0, 1, 2], [0.5, 1.5], [1]];
+      rows.forEach((row, i) => {
+        for (const k of row) {
+          ctx.beginPath();
+          ctx.arc(o.x + r + k * 2 * r * 0.75, groundY - r - i * 1.6 * r, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+  }
+
+  function drawPlayer() {
+    const { x, y, w, h } = player;
+    ctx.save();
+    ctx.translate(x, y);
+
+    // Jalat (juoksuanimaatio)
+    const swing = player.onGround ? Math.sin(player.legPhase) : 0.6;
+    ctx.strokeStyle = COLORS.ink;
+    ctx.lineWidth = 4 * unit;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5, h * 0.62);
+    ctx.lineTo(w * 0.5 + swing * w * 0.4, h);
+    ctx.moveTo(w * 0.5, h * 0.62);
+    ctx.lineTo(w * 0.5 - swing * w * 0.4, h);
+    ctx.stroke();
+
+    // Vartalo (vihreä työtakki)
+    ctx.fillStyle = COLORS.kalle;
+    ctx.fillRect(w * 0.2, h * 0.28, w * 0.6, h * 0.4);
+
+    // Kirves olalla
+    ctx.strokeStyle = COLORS.trunk;
+    ctx.lineWidth = 3 * unit;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.55, h * 0.42);
+    ctx.lineTo(w * 1.05, h * 0.05);
+    ctx.stroke();
+    ctx.fillStyle = "#777";
+    ctx.fillRect(w * 0.95, h * -0.02, w * 0.28, h * 0.12);
+
+    // Pää ja lakki
+    ctx.fillStyle = COLORS.skin;
+    ctx.beginPath();
+    ctx.arc(w * 0.5, h * 0.16, w * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.hat;
+    ctx.beginPath();
+    ctx.arc(w * 0.5, h * 0.12, w * 0.29, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(w * 0.5, h * 0.08, w * 0.42, h * 0.05);
+
+    ctx.restore();
+  }
+
+  function drawHud() {
+    ctx.fillStyle = COLORS.ink;
+    ctx.font = `bold ${18 * unit}px Georgia, serif`;
+    ctx.textAlign = "left";
+    ctx.fillText(`Matka: ${score} m`, 14, H * 0.14);
+    ctx.font = `${14 * unit}px Georgia, serif`;
+    ctx.fillText(`Ennätys: ${highScore} m`, 14, H * 0.14 + 22 * unit);
+  }
+
+  function drawPanel(title, lines) {
+    const pw = Math.min(W * 0.85, 420);
+    const ph = (70 + lines.length * 26) * unit;
+    const px = (W - pw) / 2;
+    const py = H * 0.3;
+    ctx.fillStyle = "rgba(255,250,240,0.95)";
+    ctx.strokeStyle = COLORS.accent;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(px, py, pw, ph, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = COLORS.accent;
+    ctx.textAlign = "center";
+    ctx.font = `bold ${22 * unit}px Georgia, serif`;
+    ctx.fillText(title, W / 2, py + 34 * unit);
+    ctx.fillStyle = COLORS.ink;
+    ctx.font = `${15 * unit}px Georgia, serif`;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, W / 2, py + (60 + i * 26) * unit);
+    });
+  }
+
+  function draw() {
+    drawBackground();
+    for (const o of obstacles) drawObstacle(o);
+    drawPlayer();
+    drawHud();
+
+    if (state === "start") {
+      drawPanel("Tukkilaisjuoksu", [
+        "Juokse savotalle ja hyppää",
+        "kantojen ja tukkien yli.",
+        "Napauta ruutua – hyppy!",
+        "",
+        "Napauta aloittaaksesi"
+      ]);
+    } else if (state === "over") {
+      drawPanel("Kaatui kuin kanto!", [
+        `Matkaa kertyi ${score} m`,
+        `Ennätys: ${highScore} m`,
+        "",
+        "Napauta ja yritä uudelleen"
+      ]);
+    }
+  }
+
+  function loop(t) {
+    const dt = Math.min((t - lastTime) / 1000, 0.05);
+    lastTime = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame((t) => {
+    lastTime = t;
+    requestAnimationFrame(loop);
+  });
+})();
+</script>
+</body>
+</html>
